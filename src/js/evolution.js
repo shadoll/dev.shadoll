@@ -385,7 +385,10 @@ export class EvolutionController {
         }
 
         // ── Virus kill / mutation ──────────────────────────────
-        // virus-filled hitting a non-immune entity: 90% kills it, 10% triggers mutation.
+        // virus-filled hitting a non-immune entity: the target may die or mutate.
+        // On a failed kill roll the contact will convert the target into bacteria
+        // (10% shown in the guide) if that icon exists.  Bacteria are immune to
+        // subsequent virus or bug interactions.
         const virusImmune = new Set(['bug', 'virus-filled', 'bacteria']);
         const aIsVirus = a.entityKey === 'virus-filled';
         const bIsVirus = b.entityKey === 'virus-filled';
@@ -403,10 +406,11 @@ export class EvolutionController {
 
   /**
    * Handle a collision between a virus-filled entity and a vulnerable target.
-   * Bug is the sole mutation/transformation trigger — virus only kills.
    *
-   * - virusKillChance: target begins slow-death sequence.
-   * - else: target survives unaffected (virus bounces away normally).
+   * 50%–100% of the time (controlled by virusKillChance) the target is killed.
+   * On the remaining rolls the virus fails to kill and the contact triggers a
+   * rare mutation: the target becomes a "bacteria" entity if that icon is
+   * defined.  Bacteria are immune to further virus attacks and bugs.
    *
    * @param {import('./entity.js').Entity} _virus  the virus-filled entity (unused)
    * @param {import('./entity.js').Entity} target  the entity being contacted
@@ -414,8 +418,14 @@ export class EvolutionController {
   #resolveVirusContact(_virus, target) {
     if (Math.random() < this.#virusKillChance) {
       target.die();
+    } else {
+      // mutation path – only if bacteria is registered
+      if (this.#iconsData && this.#iconsData.icons['bacteria']) {
+        const bacMeta = this.#iconsData.icons['bacteria'];
+        const bacColor = this.#iconsData.types[bacMeta.type]?.color || '#80ffee';
+        target.infectWith('bacteria', bacColor, { force: true });
+      }
     }
-    // else: target survives — virus bounces, no transformation
   }
 
   // ── State persistence ────────────────────────────────────────
