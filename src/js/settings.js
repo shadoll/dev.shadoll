@@ -97,6 +97,16 @@ export class SettingsController {
   }
 
   /**
+   * Update the mobile theme-color meta tag to match the gradient colour.
+   * Called from both #syncControls and the colour picker handler.
+   * @param {string} color
+   */
+  #setThemeColor(color) {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', color);
+  }
+
+  /**
    * Apply saved localStorage settings to the controllers and sync the UI.
    * Must be called AFTER gradient.init() so saved values override DEFAULTS.
    */
@@ -152,11 +162,6 @@ export class SettingsController {
   #bindEvents() {
     const colorPicker     = /** @type {HTMLInputElement}  */ (document.getElementById('colorPicker'));
     const colorValue      = /** @type {HTMLElement}       */ (document.getElementById('colorValue'));
-    // helper for mobile theme-color
-    const setThemeColor = (c) => {
-      const meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', c);
-    };
     const speedSlider     = /** @type {HTMLInputElement}  */ (document.getElementById('speedSlider'));
     const rotToggle       = /** @type {HTMLInputElement}  */ (document.getElementById('rotationToggle'));
     const moveSpeedSlider = /** @type {HTMLInputElement}  */ (document.getElementById('moveSpeedSlider'));
@@ -189,7 +194,7 @@ export class SettingsController {
       const col = (/** @type {HTMLInputElement} */ (e.target)).value;
       this.#gradient.setColor(col);
       colorValue.textContent = col;
-      setThemeColor(col);
+      this.#setThemeColor(col);
       this.#saveState();
     });
 
@@ -336,6 +341,7 @@ export class SettingsController {
    * Called on construction, after loadSaved(), and after reset.
    */
   #syncControls() {
+    // helper moved to class scope so sync and bindEvents can both use it.
     const colorPicker     = /** @type {HTMLInputElement} */ (document.getElementById('colorPicker'));
     const colorValue      = /** @type {HTMLElement}      */ (document.getElementById('colorValue'));
     const speedSlider     = /** @type {HTMLInputElement} */ (document.getElementById('speedSlider'));
@@ -348,7 +354,7 @@ export class SettingsController {
     const letterHitCountToggle = /** @type {HTMLInputElement} */ (document.getElementById('letterHitCountToggle'));
 
     colorPicker.value      = this.#gradient.color;
-    setThemeColor(this.#gradient.color);
+    this.#setThemeColor(this.#gradient.color);
     colorValue.textContent = this.#gradient.color;
     speedSlider.value      = String(this.#gradient.speed);
     document.getElementById('speedValue').textContent = String(this.#gradient.speed);
