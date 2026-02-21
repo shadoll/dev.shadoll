@@ -262,7 +262,8 @@ export class LogoController {
    * @returns {number[]}
    */
   getHitCounts() {
-    return this.#letters.map(l => l.bumpCount);
+    // return totalHits so previously stored values persist as totals
+    return this.#letters.map(l => l.totalHits);
   }
 
   /**
@@ -273,9 +274,12 @@ export class LogoController {
   setHitCounts(counts) {
     if (!Array.isArray(counts)) return;
     for (let i = 0; i < this.#letters.length; i++) {
-      this.#letters[i].bumpCount = counts[i] ?? 0;
+      const val = counts[i] ?? 0;
+      this.#letters[i].totalHits = val;
+      // keep bumpCount at least the same so ejection logic doesn't fire
+      this.#letters[i].bumpCount = Math.min(this.#letters[i].bumpCount, val);
       if (this.#letters[i].debugEl) {
-        this.#letters[i].debugEl.textContent = String(this.#letters[i].bumpCount);
+        this.#letters[i].debugEl.textContent = String(val);
       }
     }
   }
@@ -286,6 +290,7 @@ export class LogoController {
   resetCounters() {
     for (const letter of this.#letters) {
       letter.bumpCount = 0;
+      letter.totalHits = 0;
       if (letter.debugEl) letter.debugEl.textContent = '0';
       // remove any red proximity colouring so letters appear white again
       if (typeof letter._resetProximityColor === 'function') {
@@ -327,9 +332,10 @@ export class LogoController {
         slotIndex:     i,
         // no bumpThreshold argument -> constructor uses DEFAULTS range
       });
-      // restore bumpCount/ejected/position if present
+      // restore bumpCount/totalHits/ejected/position if present
       if (saved) {
         letter.bumpCount = saved.bumpCount ?? 0;
+        letter.totalHits = saved.totalHits ?? 0;
         letter.ejected   = saved.ejected   ?? false;
       }
       return letter;
@@ -357,7 +363,11 @@ export class LogoController {
       const saved = savedLetterStates?.[i];
       if (saved) {
         letter.bumpCount = saved.bumpCount ?? 0;
+        letter.totalHits = saved.totalHits ?? 0;
         letter.ejected   = saved.ejected   ?? false;
+
+        // display restored total on debug label if visible
+        if (letter.debugEl) letter.debugEl.textContent = String(letter.totalHits);
 
         // reflect proximity colour based on the restored bump count
         if (typeof letter._updateProximityColor === 'function') {

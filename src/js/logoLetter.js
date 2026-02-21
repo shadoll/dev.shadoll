@@ -33,6 +33,8 @@ export class LogoLetter {
   // ── Ejection state ───────────────────────────────────────
   /** @type {boolean} */ ejected       = false;
   /** @type {number}  */ bumpCount     = 0;
+  /** Total hits witnessed by this letter (never decremented). */
+  /** @type {number}  */ totalHits     = 0;
   /** @type {number}  */ bumpThreshold;
 
   // ── DOM ───────────────────────────────────────────────────
@@ -183,7 +185,8 @@ export class LogoLetter {
    */
   onBump() {
     this.bumpCount++;
-    if (this.debugEl) this.debugEl.textContent = String(this.bumpCount);
+    this.totalHits++;
+    if (this.debugEl) this.debugEl.textContent = String(this.totalHits);
 
     // colour the letter based on how close it is to the threshold; we only
     // start showing red when there are 10 or fewer hits remaining, interpolating
@@ -236,6 +239,8 @@ export class LogoLetter {
    */
   setDebugVisible(visible) {
     this.el?.classList.toggle('logo-letter--show-debug', visible);
+    // when toggling on, ensure debug text reflects totalHits
+    if (visible && this.debugEl) this.debugEl.textContent = String(this.totalHits);
   }
 
   /**
