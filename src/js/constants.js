@@ -66,4 +66,30 @@ export const DEFAULTS = {
   /** Total ms from kill trigger to entity removal */
   KILL_DEATH_DURATION:     3_000,
 
+  // ── Logo word ──────────────────────────────────────────────
+  /** Rendered size of each letter icon in px */
+  LOGO_LETTER_SIZE:           36,
+  /** Half of LOGO_LETTER_SIZE — used for edge/collision math */
+  LOGO_LETTER_HALF:           18,
+  /** Centre-to-centre spacing between adjacent letter slots (px) */
+  LOGO_LETTER_GAP:            32,
+  /** Word base velocity in px/frame (slow / heavy feel) */
+  LOGO_WORD_BASE_SPEED:     0.08,
+  /** Min bump count before ejection threshold can be reached */
+  LOGO_BUMP_THRESHOLD_MIN:   500,
+  /** Max bump count before ejection threshold */
+  LOGO_BUMP_THRESHOLD_MAX:  5000,
+  /** Spring constant pulling an ejected letter back toward its slot */
+  LOGO_SPRING_K:            0.04,
+  /** Per-frame velocity damping on ejected letters (0–1) */
+  LOGO_SPRING_DAMPING:      0.88,
+  /** Distance (px) from slot centre at which a letter re-attaches */
+  LOGO_REATTACH_RADIUS:       20,
+  /** Collision diameter for entity-vs-letter: entity half (12) + letter half (18) */
+  LOGO_COLLISION_DIAMETER:    30,
+  /** Max speed cap for an ejected letter in px/frame */
+  LOGO_EJECT_MAX_SPEED:      3.5,
+  /** Initial speed impulse applied to a letter on ejection */
+  LOGO_EJECT_IMPULSE:        2.2,
+
 };

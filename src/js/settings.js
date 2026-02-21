@@ -8,7 +8,8 @@
  *    saved state on the next page load so the system continues as configured.
  *
  * Reset:
- *  - resetBtn clears localStorage, restores DEFAULTS, and wipes live entities.
+ *  - resetBtn clears localStorage and restores DEFAULTS for settings only.
+ *    Evolution state is reset separately via the guide panel.
  */
 
 import { DEFAULTS } from './constants.js';
@@ -22,6 +23,9 @@ export class SettingsController {
   /** @type {import('./evolution.js').EvolutionController} */
   #evolution;
 
+  /** @type {import('./logoController.js').LogoController|null} */
+  #logo = null;
+
   /**
    * @param {import('./gradient.js').GradientController}   gradient
    * @param {import('./evolution.js').EvolutionController} evolution
@@ -34,6 +38,18 @@ export class SettingsController {
   }
 
   // ── Public ──────────────────────────────────────────────────
+
+  /**
+   * Wire in the LogoController once it is ready.
+   * Applies any saved debug setting immediately.
+   *
+   * @param {import('./logoController.js').LogoController} logo
+   */
+  setLogoController(logo) {
+    this.#logo = logo;
+    const toggle = /** @type {HTMLInputElement} */ (document.getElementById('debugHitCountToggle'));
+    if (toggle) logo.setDebugVisible(toggle.checked);
+  }
 
   /**
    * Apply saved localStorage settings to the controllers and sync the UI.
@@ -52,6 +68,11 @@ export class SettingsController {
       if (typeof s.virusKillChance  === 'number')  this.#evolution.setVirusKillChance(s.virusKillChance);
       if (typeof s.bugSpawnChance   === 'number')  this.#evolution.setBugSpawnChance(s.bugSpawnChance);
       if (typeof s.bugMaxCount      === 'number')  this.#evolution.setBugMaxCount(s.bugMaxCount);
+      if (typeof s.debugHitCount    === 'boolean') {
+        const toggle = /** @type {HTMLInputElement} */ (document.getElementById('debugHitCountToggle'));
+        if (toggle) toggle.checked = s.debugHitCount;
+        this.#logo?.setDebugVisible(s.debugHitCount);
+      }
     } catch { /* corrupt storage — ignore */ }
     this.#syncControls();
   }
@@ -68,7 +89,8 @@ export class SettingsController {
     const virusKillSlider = /** @type {HTMLInputElement}  */ (document.getElementById('virusKillSlider'));
     const bugChanceSlider = /** @type {HTMLInputElement}  */ (document.getElementById('bugChanceSlider'));
     const bugCountSlider  = /** @type {HTMLInputElement}  */ (document.getElementById('bugCountSlider'));
-    const resetBtn        = /** @type {HTMLButtonElement} */ (document.getElementById('resetBtn'));
+    const resetBtn           = /** @type {HTMLButtonElement} */ (document.getElementById('resetBtn'));
+    const debugHitCountToggle = /** @type {HTMLInputElement}  */ (document.getElementById('debugHitCountToggle'));
 
     // ── Colour picker ──────────────────────────────────────
     colorPicker.addEventListener('input', (e) => {
@@ -120,6 +142,13 @@ export class SettingsController {
       this.#saveState();
     });
 
+    // ── Debug: letter hit count ────────────────────────────
+    debugHitCountToggle.addEventListener('change', (e) => {
+      const on = /** @type {HTMLInputElement} */ (e.target).checked;
+      this.#logo?.setDebugVisible(on);
+      this.#saveState();
+    });
+
     // ── Reset to defaults ──────────────────────────────────
     resetBtn.addEventListener('click', () => {
       localStorage.removeItem(STORAGE_KEY);
@@ -131,7 +160,8 @@ export class SettingsController {
       this.#evolution.setVirusKillChance(DEFAULTS.VIRUS_KILL_CHANCE);
       this.#evolution.setBugSpawnChance(DEFAULTS.BUG_SPAWN_CHANCE);
       this.#evolution.setBugMaxCount(DEFAULTS.BUG_MAX_COUNT);
-      this.#evolution.clear();
+      debugHitCountToggle.checked = false;
+      this.#logo?.setDebugVisible(false);
       this.#syncControls();
     });
   }
@@ -148,6 +178,7 @@ export class SettingsController {
         virusKillChance:  this.#evolution.virusKillChance,
         bugSpawnChance:   this.#evolution.bugSpawnChance,
         bugMaxCount:      this.#evolution.bugMaxCount,
+        debugHitCount:    (/** @type {HTMLInputElement} */ (document.getElementById('debugHitCountToggle')))?.checked ?? false,
       }));
     } catch { /* quota exceeded or private browsing — ignore */ }
   }
@@ -165,7 +196,8 @@ export class SettingsController {
     const spawnRateSlider = /** @type {HTMLInputElement} */ (document.getElementById('spawnRateSlider'));
     const virusKillSlider = /** @type {HTMLInputElement} */ (document.getElementById('virusKillSlider'));
     const bugChanceSlider = /** @type {HTMLInputElement} */ (document.getElementById('bugChanceSlider'));
-    const bugCountSlider  = /** @type {HTMLInputElement} */ (document.getElementById('bugCountSlider'));
+    const bugCountSlider      = /** @type {HTMLInputElement} */ (document.getElementById('bugCountSlider'));
+    const debugHitCountToggle = /** @type {HTMLInputElement} */ (document.getElementById('debugHitCountToggle'));
 
     colorPicker.value      = this.#gradient.color;
     colorValue.textContent = this.#gradient.color;
@@ -175,6 +207,7 @@ export class SettingsController {
     spawnRateSlider.value  = String(this.#evolution.spawnRate);
     virusKillSlider.value  = String(Math.round(this.#evolution.virusKillChance * 100));
     bugChanceSlider.value  = String(Math.round(this.#evolution.bugSpawnChance  * 100));
-    bugCountSlider.value   = String(this.#evolution.bugMaxCount);
+    bugCountSlider.value      = String(this.#evolution.bugMaxCount);
+    debugHitCountToggle.checked = false; // debug off by default on sync/reset
   }
 }

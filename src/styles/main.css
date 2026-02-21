@@ -12,8 +12,8 @@
 /* ── Design Tokens ───────────────────────────────────────── */
 :root {
   /* Gradient colors — overridden immediately by JS on load */
-  --color-1: #1a7040;
-  --color-2: #4db8c4;
+  --color-1: #4d22b3;
+  --color-2: #8d66e7;
 
   /* Animation timing — overridden by JS (default = speed 5) */
   --anim-duration:     19s;

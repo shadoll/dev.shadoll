@@ -42,6 +42,8 @@ export class EvolutionController {
   /** @type {number|null} */       #animFrame = null;
   /** @type {boolean} */           #running   = false;
   /** @type {object|null} */       #iconsData = null;
+  /** @type {import('./logoController.js').LogoController|null} */ #logo = null;
+  /** @type {object|null} */       #savedLogoState = null;
 
   // ── Public API ─────────────────────────────────────────────
 
@@ -167,6 +169,20 @@ export class EvolutionController {
     this.#entities = [];
   }
 
+  /**
+   * Wire in a LogoController so the rAF loop drives it.
+   * Must be called after logo.init() completes.
+   *
+   * @param {import('./logoController.js').LogoController} logo
+   */
+  setLogoController(logo) { this.#logo = logo; }
+
+  /**
+   * Saved logo state read from localStorage — passed to LogoController.init().
+   * Available after init() resolves; null on first ever load.
+   */
+  get savedLogoState() { return this.#savedLogoState; }
+
   /** Read-only access to current entity count (useful for debugging). */
   get entityCount() { return this.#entities.length; }
 
@@ -244,8 +260,14 @@ export class EvolutionController {
         entity.update(multiplier);
       }
 
+      // Advance logo word + ejected letter physics
+      this.#logo?.update(multiplier);
+
       // Check and resolve entity-to-entity collisions after all positions updated
       this.#checkCollisions();
+
+      // Check entity-vs-logo-letter collisions
+      this.#logo?.checkCollisionsWithEntities(this.#entities);
 
       // Prune entities that died this frame (virus killed by mutation, slow-death complete)
       if (this.#entities.some(e => !e.alive)) {
@@ -405,6 +427,7 @@ export class EvolutionController {
             rotation: e.rotation,
             hueShift: e.hueShift,
           })),
+        logo: this.#logo?.serialise() ?? null,
       };
       localStorage.setItem(EVOLUTION_STORAGE_KEY, JSON.stringify(snapshot));
     } catch { /* quota exceeded — ignore */ }
@@ -424,6 +447,11 @@ export class EvolutionController {
       // Restore elapsed time so lifetime continues across reloads
       if (typeof saved.startTime === 'number') {
         this.#startTime = saved.startTime;
+      }
+
+      // Stash logo state so main.js can pass it to LogoController.init()
+      if (saved.logo && typeof saved.logo === 'object') {
+        this.#savedLogoState = saved.logo;
       }
 
       const entities = saved.entities;

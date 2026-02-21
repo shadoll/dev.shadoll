@@ -11,11 +11,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500&display=swap" rel="stylesheet" />
 
-  <!-- Styles (order matters: base → gradient → modal → icons → guide) -->
+  <!-- Styles (order matters: base → gradient → modal → icons → logo → guide) -->
   <link rel="stylesheet" href="src/styles/main.css" />
   <link rel="stylesheet" href="src/styles/gradient.css" />
   <link rel="stylesheet" href="src/styles/modal.css" />
   <link rel="stylesheet" href="src/styles/icons.css" />
+  <link rel="stylesheet" href="src/styles/logo.css" />
   <link rel="stylesheet" href="src/styles/guide.css" />
 </head>
 <body>
@@ -224,6 +225,25 @@
             </div>
           </div>
 
+        </div>
+
+        <!-- ── debug ─────────────────────────────── -->
+        <div class="settings-section">
+          <p class="settings-section__label">debug</p>
+
+          <div class="setting-group">
+            <span class="setting-label">letter hit count</span>
+            <div class="toggle-wrapper">
+              <span class="toggle-label">off</span>
+              <label class="toggle" for="debugHitCountToggle" aria-label="Show letter hit counts">
+                <input type="checkbox" id="debugHitCountToggle" />
+                <span class="toggle-track">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </label>
+              <span class="toggle-label">on</span>
+            </div>
+          </div>
         </div>
 
       </div>

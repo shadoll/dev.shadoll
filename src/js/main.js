@@ -15,6 +15,7 @@ import { ModalController }     from './modal.js';
 import { SettingsController }  from './settings.js';
 import { EvolutionController } from './evolution.js';
 import { GuideController }     from './guide.js';
+import { LogoController }      from './logoController.js';
 import { DEFAULTS }            from './constants.js';
 
 // ── Initialise controllers ─────────────────────────────────
@@ -24,7 +25,6 @@ const evolution = new EvolutionController();
 const guide     = new GuideController();
 
 // SettingsController bridges UI → gradient + evolution
-// eslint-disable-next-line no-unused-vars
 const settings  = new SettingsController(gradient, evolution);
 
 // ── Wire up settings button ────────────────────────────────
@@ -41,5 +41,16 @@ gradient.init(DEFAULTS.GRADIENT_COLOR);
 // Apply saved settings after gradient has set its defaults
 settings.loadSaved();
 
-// ── Boot evolution (async — loads icons.json + warms SVG cache) ──
-evolution.init(document.getElementById('evolutionContainer'));
+// ── Boot logo + evolution ──────────────────────────────────
+// Sequence: evolution.init() → reads localStorage (populates savedLogoState)
+//           logo.init(savedLogoState) → mounts letters, restores state
+//           setLogoController(logo) → arms per-tick calls
+const logo      = new LogoController();
+const container = document.getElementById('evolutionContainer');
+
+evolution.init(container)
+  .then(() => logo.init(container, evolution.savedLogoState))
+  .then(() => {
+    evolution.setLogoController(logo);
+    settings.setLogoController(logo);
+  });
