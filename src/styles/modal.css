@@ -225,6 +225,29 @@
   text-align: right;
 }
 
+.slider-current {
+  font-family: var(--font-mono);
+  font-size: 0.72rem; /* larger for better legibility */
+  letter-spacing: 0.09em;
+  color: #fff !important; /* always white for readability */
+  text-shadow: 0 0 2px rgba(0,0,0,0.8);
+  user-select: none;
+  /* remove background so only text remains */
+  background: transparent;
+  padding: 0 2px;
+  border-radius: 2px;
+  width: 3ch; /* fixed column width */
+  text-align: right;
+}
+
+.slider-wrapper {
+  display: grid;
+  /* columns: current-value fixed width, first label auto, slider flex, last label auto */
+  grid-template-columns: 3ch auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px; /* ensure consistent row height */
+}
 /* Reset */
 .slider {
   flex: 1;

@@ -76,9 +76,9 @@ export const DEFAULTS = {
   /** Word base velocity in px/frame (slow / heavy feel) */
   LOGO_WORD_BASE_SPEED:     0.08,
   /** Min bump count before ejection threshold can be reached */
-  LOGO_BUMP_THRESHOLD_MIN:   500,
+  LOGO_BUMP_THRESHOLD_MIN:   1000,
   /** Max bump count before ejection threshold */
-  LOGO_BUMP_THRESHOLD_MAX:  5000,
+  LOGO_BUMP_THRESHOLD_MAX:  1200,
   /** Spring constant pulling an ejected letter back toward its slot */
   LOGO_SPRING_K:            0.04,
   /** Per-frame velocity damping on ejected letters (0–1) */

@@ -39,6 +39,7 @@ export class LogoLetter {
   /** @type {HTMLElement|null} */ el      = null;
   /** @type {HTMLElement|null} */ bodyEl  = null;
   /** @type {HTMLElement|null} */ debugEl = null;
+  /** @type {HTMLElement|null} */ thresholdEl = null;
   /** @type {boolean}          */ mounted = false;
 
   /**
@@ -80,7 +81,13 @@ export class LogoLetter {
     this.debugEl.className   = 'logo-letter__debug';
     this.debugEl.textContent = '0';
 
+    // threshold label sits above the letter
+    this.thresholdEl = document.createElement('span');
+    this.thresholdEl.className = 'logo-letter__threshold';
+    this.thresholdEl.textContent = String(this.bumpThreshold);
+
     this.el.appendChild(this.bodyEl);
+    this.el.appendChild(this.thresholdEl);
     this.el.appendChild(this.debugEl);
     container.appendChild(this.el);
     this.mounted = true;
@@ -177,8 +184,19 @@ export class LogoLetter {
   onBump() {
     this.bumpCount++;
     if (this.debugEl) this.debugEl.textContent = String(this.bumpCount);
+
+    // colour the letter based on how close it is to the threshold; we only
+    // start showing red when there are 10 or fewer hits remaining, interpolating
+    // from white→red as the count rises.
+    this._updateProximityColor();
+
     this._flashHit();
-    return !this.ejected && this.bumpCount >= this.bumpThreshold;
+
+    // notify listeners that a bump occurred so the settings storage can update
+    document.dispatchEvent(new CustomEvent('logoLetterBumped'));
+
+    // detach only on *next* hit after threshold reached (bumpCount > threshold)
+    return !this.ejected && this.bumpCount > this.bumpThreshold;
   }
 
   /**
@@ -208,6 +226,8 @@ export class LogoLetter {
         * (DEFAULTS.LOGO_BUMP_THRESHOLD_MAX - DEFAULTS.LOGO_BUMP_THRESHOLD_MIN));
     this.el?.classList.remove('logo-letter--ejected');
     if (this.debugEl) this.debugEl.textContent = '0';
+    if (this.thresholdEl) this.thresholdEl.textContent = String(this.bumpThreshold);
+    this._resetProximityColor();
   }
 
   /**
@@ -216,6 +236,37 @@ export class LogoLetter {
    */
   setDebugVisible(visible) {
     this.el?.classList.toggle('logo-letter--show-debug', visible);
+  }
+
+  /**
+   * Show or hide the threshold text.
+   * @param {boolean} visible
+   */
+  setThresholdVisible(visible) {
+    this.el?.classList.toggle('logo-letter--show-threshold', visible);
+  }
+
+  /**
+   * Update the body colour to indicate proximity to the bump threshold.
+   * Once the count is within 10 of the threshold we fade from white→red; when
+   * further away the colour is left to CSS default.
+   * This function may be called any time bumpCount/threshold changes.
+   */
+  _updateProximityColor() {
+    if (!this.bodyEl || this.bumpThreshold <= 0) return;
+    // interpolate from white at 0 hits to solid red at threshold
+    const ratio = Math.min(this.bumpCount / this.bumpThreshold, 1);
+    const gb = Math.round(255 * (1 - ratio));
+    this.bodyEl.style.color = `rgb(255,${gb},${gb})`;
+  }
+
+  /**
+   * Clear any proximity colouring so the CSS default can take over again.
+   */
+  _resetProximityColor() {
+    if (this.bodyEl) {
+      this.bodyEl.style.color = '';
+    }
   }
 
   /** Remove this letter from the DOM. */

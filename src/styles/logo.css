@@ -77,6 +77,26 @@
   display: block;
 }
 
+/* ── Threshold label ───────────────────────────────────── */
+.logo-letter__threshold {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+.logo-letter--show-threshold .logo-letter__threshold {
+  display: block;
+}
+
 /* ── Hit flash animation ─────────────────────────────────── */
 @keyframes logo-letter-hit {
   0%   { scale: 1;    }

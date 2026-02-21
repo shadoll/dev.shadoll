@@ -156,6 +156,7 @@
           <div class="setting-group">
             <label class="setting-label" for="speedSlider">gradient speed</label>
             <div class="slider-wrapper">
+              <span class="slider-current" id="speedValue">2</span>
               <span class="slider-label">slow</span>
               <input type="range" id="speedSlider" min="1" max="10" value="2" class="slider" />
               <span class="slider-label">fast</span>
@@ -183,6 +184,7 @@
           <div class="setting-group">
             <label class="setting-label" for="moveSpeedSlider">movement speed</label>
             <div class="slider-wrapper">
+              <span class="slider-current" id="moveSpeedValue">5</span>
               <span class="slider-label">slow</span>
               <input type="range" id="moveSpeedSlider" min="1" max="50" value="5" class="slider" />
               <span class="slider-label">fast</span>
@@ -192,6 +194,7 @@
           <div class="setting-group">
             <label class="setting-label" for="spawnRateSlider">spawn rate</label>
             <div class="slider-wrapper">
+              <span class="slider-current" id="spawnRateValue">5</span>
               <span class="slider-label">rare</span>
               <input type="range" id="spawnRateSlider" min="1" max="10" value="5" class="slider" />
               <span class="slider-label">frequent</span>
@@ -201,6 +204,7 @@
           <div class="setting-group">
             <label class="setting-label" for="virusKillSlider">virus lethality</label>
             <div class="slider-wrapper">
+              <span class="slider-current" id="virusKillValue">90%</span>
               <span class="slider-label">0%</span>
               <input type="range" id="virusKillSlider" min="0" max="100" value="90" class="slider" />
               <span class="slider-label">100%</span>
@@ -210,6 +214,7 @@
           <div class="setting-group">
             <label class="setting-label" for="bugChanceSlider">bug rarity</label>
             <div class="slider-wrapper">
+              <span class="slider-current" id="bugChanceValue">8%</span>
               <span class="slider-label">0%</span>
               <input type="range" id="bugChanceSlider" min="0" max="100" value="8" class="slider" />
               <span class="slider-label">100%</span>
@@ -219,6 +224,7 @@
           <div class="setting-group">
             <label class="setting-label" for="bugCountSlider">bug number</label>
             <div class="slider-wrapper">
+              <span class="slider-current" id="bugCountValue">2</span>
               <span class="slider-label">0</span>
               <input type="range" id="bugCountSlider" min="0" max="10" value="2" class="slider" />
               <span class="slider-label">10</span>
@@ -227,21 +233,52 @@
 
         </div>
 
-        <!-- ── debug ─────────────────────────────── -->
+        <!-- ── logo ─────────────────────────────── -->
         <div class="settings-section">
-          <p class="settings-section__label">debug</p>
+          <p class="settings-section__label">logo</p>
 
           <div class="setting-group">
             <span class="setting-label">letter hit count</span>
             <div class="toggle-wrapper">
               <span class="toggle-label">off</span>
-              <label class="toggle" for="debugHitCountToggle" aria-label="Show letter hit counts">
-                <input type="checkbox" id="debugHitCountToggle" />
+              <label class="toggle" for="letterHitCountToggle" aria-label="Show letter hit counts">
+                <input type="checkbox" id="letterHitCountToggle" />
                 <span class="toggle-track">
                   <span class="toggle-thumb"></span>
                 </span>
               </label>
               <span class="toggle-label">on</span>
+            </div>
+          </div>
+          <div class="setting-group">
+            <span class="setting-label">detach number</span>
+            <div class="toggle-wrapper">
+              <span class="toggle-label">off</span>
+              <label class="toggle" for="letterThresholdToggle" aria-label="Show detach thresholds">
+                <input type="checkbox" id="letterThresholdToggle" />
+                <span class="toggle-track">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </label>
+              <span class="toggle-label">on</span>
+            </div>
+          </div>
+          <div class="setting-group">
+            <label class="setting-label" for="thresholdMinInput">min detach</label>
+            <div class="slider-wrapper">
+              <span class="slider-current" id="thresholdMinValue">50</span>
+              <span class="slider-label">0</span>
+              <input type="range" id="thresholdMinInput" min="0" max="5000" value="50" class="slider" />
+              <span class="slider-label">5000</span>
+            </div>
+          </div>
+          <div class="setting-group">
+            <label class="setting-label" for="thresholdMaxInput">max detach</label>
+            <div class="slider-wrapper">
+              <span class="slider-current" id="thresholdMaxValue">100</span>
+              <span class="slider-label">0</span>
+              <input type="range" id="thresholdMaxInput" min="0" max="5000" value="100" class="slider" />
+              <span class="slider-label">5000</span>
             </div>
           </div>
         </div>

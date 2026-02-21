@@ -155,8 +155,17 @@ export class EvolutionController {
     this.#entities.forEach(e => e.destroy());
     this.#entities = [];
     this.#startTime = Date.now(); // reset lifetime counter
+
+    // also tell the logo word to forget its bump counts; the visual labels
+    // should go back to `0` immediately
+    this.#logo?.resetCounters();
+    this.#logo?.resetThresholds();
+
     // Wipe saved state so a page reload starts fresh
     try { localStorage.removeItem(EVOLUTION_STORAGE_KEY); } catch { /* ignore */ }
+
+    // notify anyone listening (settings controller) that evolution was cleared
+    document.dispatchEvent(new Event('evolutionCleared'));
   }
 
   /** Stop all timers and the rAF loop; remove all entities from the DOM. */

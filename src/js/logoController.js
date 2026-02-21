@@ -41,10 +41,27 @@ export class LogoController {
   /** @type {number} */ #wordVy = 0;
 
   /** @type {LogoLetter[]} */     #letters   = [];
+  /** @type {boolean} */            #thresholdVisible = false;
   /** @type {HTMLElement|null} */ #container = null;
   /** @type {boolean} */          #ready     = false;
 
   // ── Public API ─────────────────────────────────────────────
+
+  /**
+   * Randomise the bump threshold for every letter using the current min/max
+   * settings and update the on‑screen labels. Called when settings change or
+   * when evolution is restarted.
+   */
+  resetThresholds() {
+    for (const letter of this.#letters) {
+      letter.bumpThreshold = DEFAULTS.LOGO_BUMP_THRESHOLD_MIN
+        + Math.floor(Math.random()
+            * (DEFAULTS.LOGO_BUMP_THRESHOLD_MAX - DEFAULTS.LOGO_BUMP_THRESHOLD_MIN));
+      if (letter.thresholdEl) {
+        letter.thresholdEl.textContent = String(letter.bumpThreshold);
+      }
+    }
+  }
 
   /**
    * Mount all letter DOM nodes and initialise physics.
@@ -167,6 +184,14 @@ export class LogoController {
           const ejVx = -nx * DEFAULTS.LOGO_EJECT_IMPULSE;
           const ejVy = -ny * DEFAULTS.LOGO_EJECT_IMPULSE;
           letter.eject(ejVx, ejVy);
+          // after detaching, reset bump counter and pick a fresh threshold
+          letter.bumpCount = 0;
+          letter.bumpThreshold = DEFAULTS.LOGO_BUMP_THRESHOLD_MIN
+            + Math.floor(Math.random()
+                * (DEFAULTS.LOGO_BUMP_THRESHOLD_MAX - DEFAULTS.LOGO_BUMP_THRESHOLD_MIN));
+          if (letter.thresholdEl) {
+            letter.thresholdEl.textContent = String(letter.bumpThreshold);
+          }
         }
       }
     }
@@ -179,6 +204,9 @@ export class LogoController {
    * @returns {object}
    */
   serialise() {
+    // Note: we deliberately do **not** persist each letter's bumpThreshold.
+    // When the page reloads we want thresholds to be freshly chosen from the
+    // current min/max settings rather than sticking to whatever they were.
     return {
       wordX:  this.#wordX,
       wordY:  this.#wordY,
@@ -188,7 +216,7 @@ export class LogoController {
         slotIndex:     l.slotIndex,
         iconName:      l.iconName,
         bumpCount:     l.bumpCount,
-        bumpThreshold: l.bumpThreshold,
+        // bumpThreshold intentionally omitted
         ejected:       l.ejected,
         x:             l.x,
         y:             l.y,
@@ -217,6 +245,55 @@ export class LogoController {
     }
   }
 
+  /**
+   * Toggle the visibility of the bump-threshold numbers on every letter.
+   * @param {boolean} visible
+   */
+  setThresholdVisible(visible) {
+    this.#thresholdVisible = visible;
+    for (const letter of this.#letters) {
+      letter.setThresholdVisible(visible);
+    }
+  }
+
+  /**
+   * Return an array of the current bump counts for each letter (slot order).
+   * Used by SettingsController so the zero values are included when persisting.
+   * @returns {number[]}
+   */
+  getHitCounts() {
+    return this.#letters.map(l => l.bumpCount);
+  }
+
+  /**
+   * Apply previously saved bump counts back onto the letters. If the array is
+   * shorter/longer than the current word, it is truncated or padded with zeros.
+   * @param {number[]} counts
+   */
+  setHitCounts(counts) {
+    if (!Array.isArray(counts)) return;
+    for (let i = 0; i < this.#letters.length; i++) {
+      this.#letters[i].bumpCount = counts[i] ?? 0;
+      if (this.#letters[i].debugEl) {
+        this.#letters[i].debugEl.textContent = String(this.#letters[i].bumpCount);
+      }
+    }
+  }
+
+  /**
+   * Reset all bump counters back to zero (used when evolution is cleared).
+   */
+  resetCounters() {
+    for (const letter of this.#letters) {
+      letter.bumpCount = 0;
+      if (letter.debugEl) letter.debugEl.textContent = '0';
+      // remove any red proximity colouring so letters appear white again
+      if (typeof letter._resetProximityColor === 'function') {
+        letter._resetProximityColor();
+      }
+    }
+  }
+
   // ── Private ────────────────────────────────────────────────
 
   /** Set up a brand-new word at the viewport centre with a random direction. */
@@ -242,13 +319,20 @@ export class LogoController {
     this.#wordVx = state.wordVx ?? 0;
     this.#wordVy = state.wordVy ?? DEFAULTS.LOGO_WORD_BASE_SPEED;
 
+    // Ignore saved bumpThreshold; always regenerate using current settings
     this.#letters = WORD_ICONS.map((iconName, i) => {
       const saved = state.letters?.[i];
-      return new LogoLetter({
+      const letter = new LogoLetter({
         iconName,
         slotIndex:     i,
-        bumpThreshold: saved?.bumpThreshold,
+        // no bumpThreshold argument -> constructor uses DEFAULTS range
       });
+      // restore bumpCount/ejected/position if present
+      if (saved) {
+        letter.bumpCount = saved.bumpCount ?? 0;
+        letter.ejected   = saved.ejected   ?? false;
+      }
+      return letter;
     });
   }
 
@@ -265,10 +349,20 @@ export class LogoController {
       await letter.mount(this.#container);
       if (!letter.mounted) return;
 
+      // apply current threshold visibility immediately
+      if (this.#thresholdVisible) {
+        letter.setThresholdVisible(true);
+      }
+
       const saved = savedLetterStates?.[i];
       if (saved) {
         letter.bumpCount = saved.bumpCount ?? 0;
         letter.ejected   = saved.ejected   ?? false;
+
+        // reflect proximity colour based on the restored bump count
+        if (typeof letter._updateProximityColor === 'function') {
+          letter._updateProximityColor();
+        }
 
         if (saved.ejected) {
           letter.x  = saved.x  ?? letter.x;
