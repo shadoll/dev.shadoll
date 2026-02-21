@@ -1,7 +1,8 @@
 # devpage — Agent Context File
 
 This file is a compact reference for AI agents working on this project.
-Read it before making changes. It covers purpose, architecture, patterns, and current state.
+Read it before making changes; it documents architecture, patterns, current
+state, and deployment notes.
 
 ---
 
@@ -9,13 +10,20 @@ Read it before making changes. It covers purpose, architecture, patterns, and cu
 
 A personal developer page — a single-page app with an animated gradient background
 and a floating icon "evolution" system. Icons spawn at random intervals, drift
-around the screen with chaotic physics, and bounce off viewport edges.
-A settings modal lets the user tune the gradient colour, animation speed, icon
-movement speed, and gradient rotation.
+with chaotic physics, and bounce off viewport edges. A settings modal lets the
+user tune colours, speeds, the bump/threshold behaviour of the logo word, and
+other simulation parameters.
 
-**It is intentionally a growing project.** The base page and evolution system are
-done; future work will extend icon variety, add icon interactions, and build out
-the main content area.
+Recent enhancements include:
+- Full localStorage persistence of all settings including slider values,
+  toggle states, bump counts, and threshold range.
+- Realtime current-value display for every slider.
+- Debug/visualisation toggles for per-letter hit counts and detach thresholds.
+- Configurable random bump threshold range with immediate update of existing
+  letters and regenerated thresholds on evolution restart.
+- Smooth colour interpolation for letters as they approach their threshold.
+- Reset semantics that restore **all** settings to constants while leaving
+  evolution state untouched.
 
 ---
 
@@ -23,10 +31,8 @@ the main content area.
 
 - Vanilla JS — no framework, no bundler, no build step.
 - Pure ES modules (`type="module"` in HTML). All imports use relative paths.
-- Requires a local HTTP server — `fetch()` calls fail on `file://`.
-  Run with `npx serve .` or `python3 -m http.server` then open `localhost`.
-- Browser target: modern evergreen (CSS `@property`, `backdrop-filter`, `scale`
-  as standalone property, private class fields all required).
+- Static site; requires HTTP server for `fetch()` (e.g. GitHub Pages, `npx serve`).
+- Target: modern evergreen browsers (CSS `@property`, `backdrop-filter`, etc.).
 
 ---
 
@@ -36,25 +42,28 @@ the main content area.
 index.html                    ← HTML shell + all CSS links + module entry point
 src/
   js/
-    main.js                   ← Entry point. Instantiates all controllers, boots them.
+    main.js                   ← Entry point. Instantiates controllers, wires them.
     constants.js              ← Single source of truth for all numeric/flag defaults.
-    gradient.js               ← GradientController. Drives CSS vars on <html>.
-    modal.js                  ← ModalController. Open/close, focus trap, Escape dismiss.
-    settings.js               ← SettingsController. UI → controller bridge (no own state).
-    evolution.js              ← EvolutionController. Spawn scheduler + rAF physics loop.
-    entity.js                 ← Entity class. One floating icon: physics + DOM lifecycle.
-    iconLoader.js             ← fetch() + Map cache for SVGs. normalizeSvg() strips attrs.
+    gradient.js               ← GradientController.
+    modal.js                  ← ModalController (settings pop‑up).
+    settings.js               ← SettingsController (UI ↔ controllers, storage).
+    evolution.js              ← EvolutionController (physics/loop/spawner).
+    entity.js                 ← Entity class (one floating icon).
+    logoController.js        ← LogoController (floating word logic).
+    logoLetter.js            ← LogoLetter class (per‑letter behaviour).
+    iconLoader.js             ← SVG fetching and caching.
   utils/
-    colorUtils.js             ← hexToHSL, hslToHex, deriveGradientPair.
+    colorUtils.js             ← colour math utilities.
   styles/
-    main.css                  ← Base reset, typography (DM Mono), settings button.
-    gradient.css              ← @property --gradient-angle, keyframes, body animation.
-    modal.css                 ← Glass morphism overlay, controls, toggle switch.
-    icons.css                 ← .evolution-container, .icon-entity, appear transition.
+    main.css
+    gradient.css
+    modal.css
+    icons.css
+    logo.css
   data/
-    icons.json                ← Icon registry: groups, per-icon metadata, type colours, spawn config.
+    icons.json                ← Configuration for icons, types, spawn rules.
   icons/
-    *.svg                     ← 34 SVG icons (Solar icon set, 24×24 viewBox, currentColor).
+    *.svg                     ← Raw SVG files (34 total).
 ```
 
 ---
@@ -63,38 +72,31 @@ src/
 
 ### Controller pattern
 
-Each domain has one class. No shared mutable globals.
-
 ```
 main.js
-  ├── GradientController   gradient.js     state: color, speed, rotating
-  ├── ModalController      modal.js        state: open/closed, trigger ref
-  ├── SettingsController   settings.js     no state — reads DOM, forwards to others
-  └── EvolutionController  evolution.js    state: entities[], moveSpeed, timers
-          └── Entity[]     entity.js       state: x, y, vx, vy, alive, DOM refs
+  ├── GradientController
+  ├── ModalController
+  ├── SettingsController
+  └── EvolutionController
+          ├── LogoController
+          │      └── LogoLetter[]
+          └── Entity[]
 ```
 
 ### Data flow
 
 ```
-User interaction (slider/picker/toggle)
-  → settings.js listener
-  → gradient.setColor() / gradient.setSpeed() / evolution.setMoveSpeed()
-  → CSS custom property on <html>  OR  evolution speed multiplier updated live
+UI change → settings.js → controller method → CSS/physics update → save
 ```
 
-### CSS custom properties (set on `<html>` by GradientController)
-
-```
---color-1        first gradient colour (derived from user's base colour)
---color-2        second gradient colour (hue-shifted companion)
---anim-duration  animation duration in seconds (maps speed 1-10 → ~32s-3.5s)
---gradient-angle registered @property <angle>, animated by gradientRotate keyframe
-```
+SettingsController is the only module that writes to localStorage; it serialises
+all mutable configuration (including logos’ hit counts) and restores them on
+boot, preserving the exact state across reloads. The reset button clears this
+storage and reverts UI controls to `constants.js` defaults.
 
 ---
 
-## Key patterns and why
+## Key patterns
 
 ### Two-div entity structure
 Each entity uses an outer div for JS position (`transform: translate()`) and an
@@ -153,12 +155,12 @@ SPAWN_DELAY_MIN:    3_000      // ms before first/next icon spawns
 SPAWN_DELAY_MAX:   20_000      // ms
 ICON_SIZE:              24     // px
 ICON_HALF:              12     // px, used in edge bounce math
-MOVE_SPEED:              5     // slider default; multiplier = sliderValue / MOVE_SPEED
-BASE_SPEED:             0.8    // px/frame at multiplier 1.0
-MAX_SPEED_FACTOR:        2.5   // max speed = BASE_SPEED × MAX_SPEED_FACTOR
-APPEAR_DURATION:       600     // ms, scale 0→1 CSS transition
-DRIFT_CHANCE:           0.02   // probability per frame of a velocity kick
-DRIFT_MAGNITUDE:        0.25   // max |Δv| per kick
+MOVE_SPEED:              5    // slider default; multiplier = sliderValue / MOVE_SPEED
+BASE_SPEED:             0.8   // px/frame at multiplier 1.0
+MAX_SPEED_FACTOR:        2.5  // max speed = BASE_SPEED × MAX_SPEED_FACTOR
+APPEAR_DURATION:       600    // ms, scale 0→1 CSS transition
+DRIFT_CHANCE:           0.02  // probability per frame of a velocity kick
+DRIFT_MAGNITUDE:        0.25  // max |Δv| per kick
 ```
 
 ---
@@ -200,31 +202,43 @@ Create a new group in `icons.groups` if needed.
 
 ## Current spawn behaviour
 
-Only `dna-bold-duotone` spawns. The icon is set in `icons.json → spawn.initial`.
-`EvolutionController.#spawnEntity()` always uses `spawn.initial` — it does not yet
-pick from the full icon registry. This is intentional: the spawn logic is the next
-thing to extend.
+Only `dna-bold-duotone` spawns by default; the spawn logic is the next target for extension.
 
 ---
 
 ## Settings modal controls
 
-| Element ID         | Type    | Default | Wired to                           |
-|--------------------|---------|---------|-------------------------------------|
-| `colorPicker`      | color   | #4d22b3 | `gradient.setColor(hex)`            |
-| `speedSlider`      | range 1-10 | 2    | `gradient.setSpeed(n)`              |
-| `moveSpeedSlider`  | range 1-10 | 5    | `evolution.setMoveSpeed(n)`         |
-| `rotationToggle`   | checkbox| false   | `gradient.toggleRotation(bool)`     |
+In addition to the original colour/speed toggles, the modal now offers:
+
+- real‑time readout column for every slider value (gradient speed, movement
+  speed, spawn rate, virus kill %, bug rarity %, bug count, and bump range).
+- toggles for showing per‑letter **hit counts** and **detach thresholds** on the
+  floating logo word.
+- sliders to adjust the **min/max bump threshold** used when picking random
+  detach numbers.
+
+All settings persist to localStorage, including zeros and hits, and reload
+exact values on page refresh. The reset button restores every setting to the
+hardcoded constant defaults.
 
 ---
 
 ## Known gaps / next steps
 
-1. **Spawn variety** — `#spawnEntity` always spawns `spawn.initial`. Extend to pick
-   randomly from `icons.icons` (or weighted by type) to get diverse entities.
-2. **icons.json completeness** — 25 icons on disk are unregistered. Add them to
-   unlock their use in spawning.
-3. **Icon interactions** — no collision detection between entities yet.
-4. **Main content area** — `<main class="page-main">` is empty. Reserved for content.
-5. **Entity cap** — no maximum entity count; they accumulate indefinitely.
-6. **Persistence** — settings reset on page reload. No localStorage yet.
+1. **Spawn variety** – pick from full icon registry.
+2. **icons.json completeness** – register remaining 25 icons.
+3. **Entity interactions** – currently only entity‑letter collisions are handled.
+4. **Main content area** – still an empty `<main>` for future content.
+5. **Entity cap/persistence improvements** – add limits or export/import features.
+
+---
+
+## Deployment notes
+
+The app is fully static; GitHub Pages (or any static file host) works fine.
+No server‑side code is required. Make sure to serve via HTTP so `fetch` can
+load `icons.json` and SVG files.
+
+*Updated 2026‑02‑21 to reflect the current state after adding settings persistence,
+hit‑count/debug toggles, threshold controls, colour interpolation, and continued
+work on logo/evolution mechanics.*
