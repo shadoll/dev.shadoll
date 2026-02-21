@@ -40,4 +40,30 @@ export const DEFAULTS = {
   /** Max |Δv| applied on each drift kick */
   DRIFT_MAGNITUDE:        0.25,
 
+  // ── Collisions ─────────────────────────────────────────────
+  /** Distance between centres (px) at which two entities collide (= ICON_SIZE) */
+  COLLISION_DIAMETER:     24,
+
+  // ── Hit colour shift ───────────────────────────────────────
+  /** Minimum hue-rotate degrees added to an entity's filter on each collision */
+  HIT_HUE_MIN:            60,
+  /** Additional random range on top of HIT_HUE_MIN */
+  HIT_HUE_RANGE:          60,
+
+  // ── Bug / infection ────────────────────────────────────────
+  /** Fallback probability for a rare-bug spawn when icons.json rareChance is absent */
+  BUG_SPAWN_CHANCE:        0.08,
+  /** Max number of bug entities alive simultaneously */
+  BUG_MAX_COUNT:           2,
+
+  // ── Virus kill ─────────────────────────────────────────────
+  /** Probability that a virus contact kills the target (else it survives unaffected) */
+  VIRUS_KILL_CHANCE:       0.9,
+  /** CSS colour applied to a dying entity immediately on contact */
+  KILL_FADE_COLOR:         '#ffaaaa',
+  /** Delay (ms) before the grayscale-dead visual phase begins */
+  KILL_FADE_MS:            400,
+  /** Total ms from kill trigger to entity removal */
+  KILL_DEATH_DURATION:     3_000,
+
 };

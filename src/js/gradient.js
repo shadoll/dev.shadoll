@@ -5,6 +5,7 @@
  */
 
 import { deriveGradientPair } from '../utils/colorUtils.js';
+import { DEFAULTS }           from './constants.js';
 
 /** Root element — CSS custom properties live here */
 const ROOT = document.documentElement;
@@ -23,9 +24,9 @@ function speedToDuration(speed) {
 }
 
 export class GradientController {
-  /** @type {string} */    #color    = '#4d22b3';
-  /** @type {number} */    #speed    = 2;
-  /** @type {boolean} */   #rotating = false;
+  /** @type {string} */    #color    = DEFAULTS.GRADIENT_COLOR;
+  /** @type {number} */    #speed    = DEFAULTS.GRADIENT_SPEED;
+  /** @type {boolean} */   #rotating = DEFAULTS.GRADIENT_ROTATION;
 
   /**
    * Initialise gradient with a base colour.
@@ -36,6 +37,7 @@ export class GradientController {
   init(hex) {
     this.setColor(hex);
     this.setSpeed(this.#speed);
+    this.toggleRotation(this.#rotating);
   }
 
   /**

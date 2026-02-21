@@ -11,11 +11,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500&display=swap" rel="stylesheet" />
 
-  <!-- Styles (order matters: base → gradient → modal → icons) -->
+  <!-- Styles (order matters: base → gradient → modal → icons → guide) -->
   <link rel="stylesheet" href="src/styles/main.css" />
   <link rel="stylesheet" href="src/styles/gradient.css" />
   <link rel="stylesheet" href="src/styles/modal.css" />
   <link rel="stylesheet" href="src/styles/icons.css" />
+  <link rel="stylesheet" href="src/styles/guide.css" />
 </head>
 <body>
 
@@ -23,12 +24,106 @@
   <div class="evolution-container" id="evolutionContainer" aria-hidden="true"></div>
 
   <!-- ── Settings trigger ─────────────────────────────────── -->
-  <button class="settings-btn" id="settingsBtn" aria-label="Open settings" aria-haspopup="dialog">
+  <button class="settings-btn icon-btn" id="settingsBtn" aria-label="Open settings" aria-haspopup="dialog">
     #
   </button>
 
   <!-- ── Main content area (grows with future features) ───── -->
   <main class="page-main" id="pageMain"></main>
+
+  <!-- ── Evolution guide button (bottom-right) ─────────────── -->
+  <button
+    class="guide-btn icon-btn"
+    id="guideBtn"
+    aria-label="Open evolution guide"
+    aria-expanded="false"
+    aria-controls="guidePanel"
+  >ℹ</button>
+
+  <!-- ── Evolution guide panel ─────────────────────────────── -->
+  <aside
+    class="guide-panel"
+    id="guidePanel"
+    aria-hidden="true"
+    aria-label="Evolution guide"
+  >
+    <div class="guide-panel__header">
+      <p class="guide-panel__title">evolution info</p>
+      <span class="guide-panel__uptime">0:00</span>
+    </div>
+
+    <!-- Entities -->
+    <div class="guide-section">
+      <p class="guide-section__label">entities</p>
+      <ul class="guide-entities">
+        <li class="guide-entity" style="--c:#a8ffb8" data-count-key="dna-bold-duotone">
+          <span class="guide-entity__icon" data-guide-icon="dna-bold-duotone"></span>
+          <span class="guide-entity__name">dna</span>
+          <span class="guide-entity__role">base lifeform</span>
+          <span class="guide-entity__count">0</span>
+        </li>
+        <li class="guide-entity" style="--c:#ffb0a8" data-count-key="bug">
+          <span class="guide-entity__icon" data-guide-icon="bug"></span>
+          <span class="guide-entity__name">bug</span>
+          <span class="guide-entity__role">rare · infector</span>
+          <span class="guide-entity__count">0</span>
+        </li>
+        <li class="guide-entity" style="--c:#ff4d6d" data-count-key="virus-filled">
+          <span class="guide-entity__icon" data-guide-icon="virus-filled"></span>
+          <span class="guide-entity__name">virus</span>
+          <span class="guide-entity__role">lethal threat</span>
+          <span class="guide-entity__count">0</span>
+        </li>
+        <li class="guide-entity" style="--c:#80ffee" data-count-key="bacteria">
+          <span class="guide-entity__icon" data-guide-icon="bacteria"></span>
+          <span class="guide-entity__name">bacteria</span>
+          <span class="guide-entity__role">mutant · immune</span>
+          <span class="guide-entity__count">0</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Interactions -->
+    <div class="guide-section">
+      <p class="guide-section__label">interactions</p>
+      <ul class="guide-rules">
+        <li class="guide-rule">
+          <span class="guide-rule__dot" style="--c:#ffb0a8"></span>
+          <span class="guide-rule__op">+</span>
+          <span class="guide-rule__dot" style="--c:#a8ffb8"></span>
+          <span class="guide-rule__desc">bug infects → <span style="color:#ff4d6d">virus</span></span>
+        </li>
+        <li class="guide-rule">
+          <span class="guide-rule__dot" style="--c:#ffb0a8"></span>
+          <span class="guide-rule__op">+</span>
+          <span class="guide-rule__dot" style="--c:#ff4d6d"></span>
+          <span class="guide-rule__desc">bug cures → <span style="color:#a8ffb8">dna</span></span>
+        </li>
+        <li class="guide-rule">
+          <span class="guide-rule__dot" style="--c:#ff4d6d"></span>
+          <span class="guide-rule__op">+</span>
+          <span class="guide-rule__dot" style="--c:#a8ffb8"></span>
+          <span class="guide-rule__desc">virus kills &nbsp;<span class="guide-rule__pct">90%</span></span>
+        </li>
+        <li class="guide-rule">
+          <span class="guide-rule__dot" style="--c:#ff4d6d"></span>
+          <span class="guide-rule__op">+</span>
+          <span class="guide-rule__dot" style="--c:#a8ffb8"></span>
+          <span class="guide-rule__desc">mutates → <span style="color:#80ffee">bacteria</span> <span class="guide-rule__pct">10%</span></span>
+        </li>
+        <li class="guide-rule">
+          <span class="guide-rule__dot" style="--c:#80ffee"></span>
+          <span class="guide-rule__op"></span>
+          <span class="guide-rule__dot" style="--c:transparent;box-shadow:none;border:1px solid rgba(255,255,255,0.18)"></span>
+          <span class="guide-rule__desc">bacteria immune to virus</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="guide-footer">
+      <button class="guide-reset-btn" id="guideResetBtn">restart evolution</button>
+    </div>
+  </aside>
 
   <!-- ── Settings modal ──────────────────────────────────── -->
   <div
@@ -48,50 +143,92 @@
 
       <div class="modal-body">
 
-        <!-- Background color -->
-        <div class="setting-group">
-          <label class="setting-label" for="colorPicker">background color</label>
-          <div class="color-input-wrapper">
-            <input type="color" id="colorPicker" value="#4d22b3" class="color-picker" />
-            <span class="color-value" id="colorValue">#4d22b3</span>
+        <!-- ── background ──────────────────────────── -->
+        <div class="settings-section">
+          <div class="setting-group">
+            <label class="setting-label" for="colorPicker">background colour</label>
+            <div class="color-input-wrapper">
+              <input type="color" id="colorPicker" value="#4d22b3" class="color-picker" />
+              <span class="color-value" id="colorValue">#4d22b3</span>
+            </div>
+          </div>
+          <div class="setting-group">
+            <label class="setting-label" for="speedSlider">gradient speed</label>
+            <div class="slider-wrapper">
+              <span class="slider-label">slow</span>
+              <input type="range" id="speedSlider" min="1" max="10" value="2" class="slider" />
+              <span class="slider-label">fast</span>
+            </div>
+          </div>
+          <div class="setting-group">
+            <span class="setting-label">gradient rotation</span>
+            <div class="toggle-wrapper">
+              <span class="toggle-label">off</span>
+              <label class="toggle" for="rotationToggle" aria-label="Toggle gradient rotation">
+                <input type="checkbox" id="rotationToggle" />
+                <span class="toggle-track">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </label>
+              <span class="toggle-label">on</span>
+            </div>
           </div>
         </div>
 
-        <!-- Gradient animation speed -->
-        <div class="setting-group">
-          <label class="setting-label" for="speedSlider">animation speed</label>
-          <div class="slider-wrapper">
-            <span class="slider-label">slow</span>
-            <input type="range" id="speedSlider" min="1" max="10" value="2" class="slider" />
-            <span class="slider-label">fast</span>
+        <!-- ── elements ────────────────────────────── -->
+        <div class="settings-section">
+          <p class="settings-section__label">elements</p>
+
+          <div class="setting-group">
+            <label class="setting-label" for="moveSpeedSlider">movement speed</label>
+            <div class="slider-wrapper">
+              <span class="slider-label">slow</span>
+              <input type="range" id="moveSpeedSlider" min="1" max="50" value="5" class="slider" />
+              <span class="slider-label">fast</span>
+            </div>
           </div>
+
+          <div class="setting-group">
+            <label class="setting-label" for="spawnRateSlider">spawn rate</label>
+            <div class="slider-wrapper">
+              <span class="slider-label">rare</span>
+              <input type="range" id="spawnRateSlider" min="1" max="10" value="5" class="slider" />
+              <span class="slider-label">frequent</span>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label" for="virusKillSlider">virus lethality</label>
+            <div class="slider-wrapper">
+              <span class="slider-label">0%</span>
+              <input type="range" id="virusKillSlider" min="0" max="100" value="90" class="slider" />
+              <span class="slider-label">100%</span>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label" for="bugChanceSlider">bug rarity</label>
+            <div class="slider-wrapper">
+              <span class="slider-label">0%</span>
+              <input type="range" id="bugChanceSlider" min="0" max="100" value="8" class="slider" />
+              <span class="slider-label">100%</span>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label" for="bugCountSlider">bug number</label>
+            <div class="slider-wrapper">
+              <span class="slider-label">0</span>
+              <input type="range" id="bugCountSlider" min="0" max="10" value="2" class="slider" />
+              <span class="slider-label">10</span>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Icon movement speed -->
-        <div class="setting-group">
-          <label class="setting-label" for="moveSpeedSlider">icon movement speed</label>
-          <div class="slider-wrapper">
-            <span class="slider-label">slow</span>
-            <input type="range" id="moveSpeedSlider" min="1" max="10" value="5" class="slider" />
-            <span class="slider-label">fast</span>
-          </div>
-        </div>
-
-        <!-- Gradient rotation -->
-        <div class="setting-group">
-          <span class="setting-label">gradient rotation</span>
-          <div class="toggle-wrapper">
-            <span class="toggle-label">off</span>
-            <label class="toggle" for="rotationToggle" aria-label="Toggle gradient rotation">
-              <input type="checkbox" id="rotationToggle" />
-              <span class="toggle-track">
-                <span class="toggle-thumb"></span>
-              </span>
-            </label>
-            <span class="toggle-label">on</span>
-          </div>
-        </div>
-
+      </div>
+      <div class="modal-footer">
+        <button class="reset-btn" id="resetBtn">reset to defaults</button>
       </div>
     </div>
   </div>

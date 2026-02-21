@@ -1,11 +1,12 @@
 {
-  "_comment": "Icon registry for the evolution system. Each icon has a type (good/bad/neutral) and belongs to a group. Types define the visual colour tint. Spawn config controls initial entity creation.",
+  "_comment": "Icon registry for the evolution system. Each icon has a type (good/bad/neutral/viral) and belongs to a group. Types define the visual colour tint. Spawn config controls initial entity creation and rare spawns.",
 
   "groups": [
-    { "id": "biology",  "label": "Biology",     "icons": ["dna-bold-duotone"] },
+    { "id": "biology",  "label": "Biology",     "icons": ["dna-bold-duotone", "bacteria"] },
     { "id": "tech",     "label": "Technology",  "icons": ["database-bold-duotone", "display-line-duotone", "bug-bold-duotone"] },
     { "id": "social",   "label": "Social",      "icons": ["chat-round-dots-bold-duotone", "chat-round-unread-bold-duotone"] },
-    { "id": "economy",  "label": "Economy",     "icons": ["chat-round-money-bold-duotone", "delivery-bold-duotone", "buildings-3-bold-duotone"] }
+    { "id": "economy",  "label": "Economy",     "icons": ["chat-round-money-bold-duotone", "delivery-bold-duotone", "buildings-3-bold-duotone"] },
+    { "id": "threat",   "label": "Threat",      "icons": ["bug", "virus-filled"] }
   ],
 
   "icons": {
@@ -17,16 +18,23 @@
     "chat-round-unread-bold-duotone": { "label": "Unread Chat",   "type": "neutral", "group": "social"   },
     "database-bold-duotone":          { "label": "Database",      "type": "good",    "group": "tech"     },
     "delivery-bold-duotone":          { "label": "Delivery",      "type": "good",    "group": "economy"  },
-    "display-line-duotone":           { "label": "Display",       "type": "neutral", "group": "tech"     }
+    "display-line-duotone":           { "label": "Display",       "type": "neutral", "group": "tech"     },
+    "bug":                            { "label": "Bug (rare)",     "type": "bad",     "group": "threat",  "isRare": true, "behavior": "infect", "infectWith": "virus-filled" },
+    "virus-filled":                   { "label": "Virus",          "type": "viral",   "group": "threat"   },
+    "bacteria":                       { "label": "Bacteria",       "type": "mutant",  "group": "biology"  }
   },
 
   "types": {
     "good":    { "label": "Beneficial", "color": "#a8ffb8" },
     "bad":     { "label": "Harmful",    "color": "#ffb0a8" },
-    "neutral": { "label": "Neutral",    "color": "#c4d8ff" }
+    "neutral": { "label": "Neutral",    "color": "#c4d8ff" },
+    "viral":   { "label": "Viral",      "color": "#ff4d6d" },
+    "mutant":  { "label": "Mutant",     "color": "#80ffee" }
   },
 
   "spawn": {
-    "initial": "dna-bold-duotone"
+    "initial":    "dna-bold-duotone",
+    "rare":       "bug",
+    "rareChance": 0.08
   }
 }

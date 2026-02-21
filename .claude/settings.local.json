@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/Users/sha/Developer/sha.dev/devpage/src/icons/bacteria.svg:*)",
+      "Bash(/Users/sha/Developer/sha.dev/devpage/src/styles/guide.css:*)",
+      "Bash(/Users/sha/Developer/sha.dev/devpage/src/js/guide.js:*)"
+    ]
+  }
+}

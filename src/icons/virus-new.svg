@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <!-- spikes (cardinal) -->
+  <rect x="11.25" y="1.5" width="1.5" height="3.5" rx="0.75"/>
+  <rect x="11.25" y="19" width="1.5" height="3.5" rx="0.75"/>
+  <rect x="1.5" y="11.25" width="3.5" height="1.5" rx="0.75"/>
+  <rect x="19" y="11.25" width="3.5" height="1.5" rx="0.75"/>
+  <!-- spikes (diagonal) -->
+  <rect x="11.25" y="1.5" width="1.5" height="3.5" rx="0.75" transform="rotate(45 12 12)"/>
+  <rect x="11.25" y="1.5" width="1.5" height="3.5" rx="0.75" transform="rotate(135 12 12)"/>
+  <rect x="11.25" y="1.5" width="1.5" height="3.5" rx="0.75" transform="rotate(225 12 12)"/>
+  <rect x="11.25" y="1.5" width="1.5" height="3.5" rx="0.75" transform="rotate(315 12 12)"/>
+  <!-- central body -->
+  <circle cx="12" cy="12" r="5"/>
+  <!-- receptor dots -->
+  <circle cx="12" cy="9.2" r="1.2" fill="white" opacity="0.45"/>
+  <circle cx="10" cy="13.2" r="0.95" fill="white" opacity="0.45"/>
+  <circle cx="14" cy="13.2" r="0.95" fill="white" opacity="0.45"/>
+</svg>
