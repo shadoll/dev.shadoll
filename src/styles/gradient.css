@@ -1,0 +1,58 @@
+/* ════════════════════════════════════════════════════════════
+   gradient.css — animated background gradient + rotation
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Register animatable CSS custom property (Houdini) ───── */
+/* Allows smooth CSS animation of the gradient angle.         */
+/* Fallback: browsers without @property support still show   */
+/* the gradient, just without animated rotation.              */
+@property --gradient-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 135deg;
+}
+
+/* ── Keyframe: position-based flow (always active) ───────── */
+/* Creates a fluid "breathing" motion by shifting the large   */
+/* (300%) background across the viewport.                     */
+@keyframes gradientFlow {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+/* ── Keyframe: clockwise angle rotation (toggle-gated) ───── */
+/* Adds 360° to the starting angle for one full CW rotation.  */
+@keyframes gradientRotate {
+  from { --gradient-angle: 135deg; }
+  to   { --gradient-angle: 495deg; }
+}
+
+/* ── Background application ──────────────────────────────── */
+body {
+  background: linear-gradient(
+    var(--gradient-angle),
+    var(--color-1)  0%,
+    var(--color-2)  50%,
+    var(--color-1)  100%
+  );
+  background-size: 300% 300%;
+
+  /*
+   * Both animations are always declared here.
+   * gradientRotate starts PAUSED so it costs nothing until
+   * the user enables rotation — then JS adds .gradient-rotating
+   * which flips its play-state to running.
+   * This avoids restarting gradientFlow when the class toggles.
+   */
+  animation:
+    gradientFlow   var(--anim-duration)      ease-in-out infinite,
+    gradientRotate var(--rotation-duration)  linear      infinite;
+
+  animation-play-state: running, paused;
+}
+
+/* ── Rotation enabled ────────────────────────────────────── */
+body.gradient-rotating {
+  animation-play-state: running, running;
+}

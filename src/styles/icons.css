@@ -1,0 +1,72 @@
+/* ════════════════════════════════════════════════════════════
+   icons.css — evolution container and floating icon entities
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Evolution stage ─────────────────────────────────────── */
+/*
+ * Fixed full-viewport layer that holds all icon entities.
+ * pointer-events: none so it never blocks page interaction.
+ */
+.evolution-container {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  overflow: hidden;       /* clip any entity that overshoots during bounce */
+}
+
+/* ── Icon entity — outer (physics position) ──────────────── */
+/*
+ * JS writes:  el.style.transform = 'translate(Xpx, Ypx)'  each frame.
+ * Size is fixed; position is driven entirely by the JS physics loop.
+ * will-change: transform hints the browser to promote this to its own
+ * compositor layer for smooth, layout-free animation.
+ */
+.icon-entity {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  will-change: transform;
+  /* colour is set inline by Entity.mount() and inherited by the SVG */
+}
+
+/* ── Icon entity — inner (appear scale animation) ────────── */
+/*
+ * CSS `scale` is a standalone transform property — independent from the
+ * parent's `transform: translate()`.  This means the appear transition
+ * runs without interfering with the per-frame position updates above.
+ *
+ * Easing: cubic-bezier(0.34, 1.56, 0.64, 1) is a spring-style curve
+ * that overshoots slightly, giving the icon a satisfying "pop" entry.
+ */
+.icon-entity__body {
+  width: 100%;
+  height: 100%;
+
+  /* Start as an invisible dot */
+  scale: 0;
+  opacity: 0;
+
+  transition:
+    scale   0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.25s ease;
+
+  /* Subtle shadow so icons are readable over any gradient colour */
+  filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.35));
+}
+
+/* Alive state — triggered by JS setting data-state="alive" */
+.icon-entity__body[data-state="alive"] {
+  scale: 1;
+  opacity: 1;
+}
+
+/* ── SVG inside the body ─────────────────────────────────── */
+.icon-entity__body svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* SVGs use currentColor — colour is inherited from .icon-entity */
+}

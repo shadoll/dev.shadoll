@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="devpage" />
+  <title>devpage</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500&display=swap" rel="stylesheet" />
+
+  <!-- Styles (order matters: base → gradient → modal → icons) -->
+  <link rel="stylesheet" href="src/styles/main.css" />
+  <link rel="stylesheet" href="src/styles/gradient.css" />
+  <link rel="stylesheet" href="src/styles/modal.css" />
+  <link rel="stylesheet" href="src/styles/icons.css" />
+</head>
+<body>
+
+  <!-- ── Evolution stage (icon entities mount here) ──────── -->
+  <div class="evolution-container" id="evolutionContainer" aria-hidden="true"></div>
+
+  <!-- ── Settings trigger ─────────────────────────────────── -->
+  <button class="settings-btn" id="settingsBtn" aria-label="Open settings" aria-haspopup="dialog">
+    #
+  </button>
+
+  <!-- ── Main content area (grows with future features) ───── -->
+  <main class="page-main" id="pageMain"></main>
+
+  <!-- ── Settings modal ──────────────────────────────────── -->
+  <div
+    class="modal-overlay"
+    id="modalOverlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalTitle"
+    aria-hidden="true"
+  >
+    <div class="modal">
+
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle">settings</span>
+        <button class="modal-close" id="modalClose" aria-label="Close settings">&times;</button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Background color -->
+        <div class="setting-group">
+          <label class="setting-label" for="colorPicker">background color</label>
+          <div class="color-input-wrapper">
+            <input type="color" id="colorPicker" value="#4d22b3" class="color-picker" />
+            <span class="color-value" id="colorValue">#4d22b3</span>
+          </div>
+        </div>
+
+        <!-- Gradient animation speed -->
+        <div class="setting-group">
+          <label class="setting-label" for="speedSlider">animation speed</label>
+          <div class="slider-wrapper">
+            <span class="slider-label">slow</span>
+            <input type="range" id="speedSlider" min="1" max="10" value="2" class="slider" />
+            <span class="slider-label">fast</span>
+          </div>
+        </div>
+
+        <!-- Icon movement speed -->
+        <div class="setting-group">
+          <label class="setting-label" for="moveSpeedSlider">icon movement speed</label>
+          <div class="slider-wrapper">
+            <span class="slider-label">slow</span>
+            <input type="range" id="moveSpeedSlider" min="1" max="10" value="5" class="slider" />
+            <span class="slider-label">fast</span>
+          </div>
+        </div>
+
+        <!-- Gradient rotation -->
+        <div class="setting-group">
+          <span class="setting-label">gradient rotation</span>
+          <div class="toggle-wrapper">
+            <span class="toggle-label">off</span>
+            <label class="toggle" for="rotationToggle" aria-label="Toggle gradient rotation">
+              <input type="checkbox" id="rotationToggle" />
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
+            </label>
+            <span class="toggle-label">on</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── App entry point (ES module) ─────────────────────── -->
+  <script type="module" src="src/js/main.js"></script>
+
+</body>
+</html>

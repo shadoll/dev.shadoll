@@ -1,0 +1,335 @@
+/* ════════════════════════════════════════════════════════════
+   modal.css — overlay, panel, and all settings controls
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Overlay ─────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  /* Hidden by default */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.26s ease;
+}
+
+.modal-overlay.modal-visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Panel ───────────────────────────────────────────────── */
+.modal {
+  width: 310px;
+
+  background: var(--modal-surface);
+  border: 1px solid var(--modal-border);
+  border-radius: 18px;
+  overflow: hidden;
+
+  /* Glass blur effect */
+  backdrop-filter: blur(48px) saturate(1.5);
+  -webkit-backdrop-filter: blur(48px) saturate(1.5);
+
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.45),
+    0  2px 12px rgba(0, 0, 0, 0.30);
+
+  /* Entry animation: rises and scales into place */
+  transform: translateY(18px) scale(0.96);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.modal-overlay.modal-visible .modal {
+  transform: translateY(0) scale(1);
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 15px;
+  border-bottom: 1px solid var(--modal-divider);
+}
+
+.modal-title {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: var(--text-lo);
+  user-select: none;
+}
+
+.modal-close {
+  appearance: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--text-lo);
+
+  transition:
+    color      0.18s ease,
+    background 0.18s ease;
+}
+
+.modal-close:hover {
+  color: var(--text-hi);
+  background: var(--surface-tint);
+}
+
+.modal-close:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
+}
+
+/* ── Body ────────────────────────────────────────────────── */
+.modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ── Setting group (label + control) ─────────────────────── */
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setting-label {
+  font-family: var(--font-mono);
+  font-size: 0.60rem;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: lowercase;
+  color: var(--text-lo);
+  user-select: none;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Color Picker
+   ══════════════════════════════════════════════════════════ */
+.color-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.color-picker {
+  width: 52px;
+  height: 30px;
+  padding: 3px;
+  border: 1px solid var(--modal-border);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.18s ease;
+}
+
+.color-picker:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* Remove inner chrome swatch border on WebKit */
+.color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+.color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+.color-picker::-moz-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+
+.color-value {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--text-hi);
+}
+
+/* ══════════════════════════════════════════════════════════
+   Speed Slider
+   ══════════════════════════════════════════════════════════ */
+.slider-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slider-label {
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.09em;
+  color: var(--text-lo);
+  user-select: none;
+  min-width: 26px;
+}
+
+.slider-label:last-child {
+  text-align: right;
+}
+
+/* Reset */
+.slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  height: 18px;      /* tap target height */
+  display: flex;
+  align-items: center;
+}
+
+/* Track — WebKit */
+.slider::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Thumb — WebKit */
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  transition:
+    transform  0.15s ease,
+    background 0.15s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.35);
+  background: #fff;
+}
+
+/* Track — Firefox */
+.slider::-moz-range-track {
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Thumb — Firefox */
+.slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  border: none;
+  cursor: pointer;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Toggle Switch
+   ══════════════════════════════════════════════════════════ */
+.toggle-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle-label {
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.09em;
+  color: var(--text-lo);
+  user-select: none;
+}
+
+/* The <label> wrapping the whole toggle */
+.toggle {
+  display: inline-flex;
+  cursor: pointer;
+  position: relative;
+}
+
+/* Hide native checkbox, keep it accessible */
+.toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Track pill */
+.toggle-track {
+  position: relative;
+  display: block;
+  width: 42px;
+  height: 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition:
+    background     0.28s ease,
+    border-color   0.28s ease;
+}
+
+/* Checked: brighten track */
+.toggle input:checked + .toggle-track {
+  background: rgba(255, 255, 255, 0.34);
+  border-color: rgba(255, 255, 255, 0.20);
+}
+
+/* Thumb dot */
+.toggle-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.82);
+  transition:
+    transform  0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.28s ease;
+}
+
+/* Checked: slide thumb to the right */
+.toggle input:checked + .toggle-track .toggle-thumb {
+  transform: translateX(18px);
+  background: #fff;
+}
+
+/* Focus ring on the label for keyboard nav */
+.toggle input:focus-visible + .toggle-track {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+  outline-offset: 2px;
+}

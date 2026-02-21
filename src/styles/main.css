@@ -1,0 +1,106 @@
+/* ════════════════════════════════════════════════════════════
+   main.css — reset, design tokens, global layout, settings btn
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Reset ───────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Design Tokens ───────────────────────────────────────── */
+:root {
+  /* Gradient colors — overridden immediately by JS on load */
+  --color-1: #1a7040;
+  --color-2: #4db8c4;
+
+  /* Animation timing — overridden by JS (default = speed 5) */
+  --anim-duration:     19s;
+  --rotation-duration: 22s;
+
+  /* Modal surface */
+  --modal-surface:  rgba(10, 10, 14, 0.82);
+  --modal-border:   rgba(255, 255, 255, 0.08);
+  --modal-divider:  rgba(255, 255, 255, 0.06);
+
+  /* Text */
+  --text-hi: rgba(255, 255, 255, 0.92);
+  --text-lo: rgba(255, 255, 255, 0.42);
+
+  /* Misc surface tints */
+  --surface-tint: rgba(255, 255, 255, 0.10);
+
+  /* Font */
+  --font-mono: 'DM Mono', 'Courier New', monospace;
+}
+
+/* ── Body ────────────────────────────────────────────────── */
+body {
+  min-height: 100dvh;
+  font-family: var(--font-mono);
+  overflow: hidden;
+}
+
+/* ── Page content area (grows with future features) ──────── */
+.page-main {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Settings Button ─────────────────────────────────────── */
+.settings-btn {
+  position: fixed;
+  top: 22px;
+  right: 26px;
+  z-index: 100;
+
+  /* Strip all button decoration */
+  appearance: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  /* Shape & layout */
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Typography */
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, 0.65);
+
+  transition:
+    color      0.18s ease,
+    background 0.18s ease;
+}
+
+.settings-btn:hover {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.settings-btn:active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Focus-visible ring for keyboard nav */
+.settings-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}

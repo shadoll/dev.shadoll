@@ -1,0 +1,32 @@
+{
+  "_comment": "Icon registry for the evolution system. Each icon has a type (good/bad/neutral) and belongs to a group. Types define the visual colour tint. Spawn config controls initial entity creation.",
+
+  "groups": [
+    { "id": "biology",  "label": "Biology",     "icons": ["dna-bold-duotone"] },
+    { "id": "tech",     "label": "Technology",  "icons": ["database-bold-duotone", "display-line-duotone", "bug-bold-duotone"] },
+    { "id": "social",   "label": "Social",      "icons": ["chat-round-dots-bold-duotone", "chat-round-unread-bold-duotone"] },
+    { "id": "economy",  "label": "Economy",     "icons": ["chat-round-money-bold-duotone", "delivery-bold-duotone", "buildings-3-bold-duotone"] }
+  ],
+
+  "icons": {
+    "dna-bold-duotone":               { "label": "DNA",           "type": "good",    "group": "biology"  },
+    "bug-bold-duotone":               { "label": "Bug",           "type": "bad",     "group": "tech"     },
+    "buildings-3-bold-duotone":       { "label": "Buildings",     "type": "good",    "group": "economy"  },
+    "chat-round-dots-bold-duotone":   { "label": "Chat",          "type": "neutral", "group": "social"   },
+    "chat-round-money-bold-duotone":  { "label": "Chat Money",    "type": "neutral", "group": "economy"  },
+    "chat-round-unread-bold-duotone": { "label": "Unread Chat",   "type": "neutral", "group": "social"   },
+    "database-bold-duotone":          { "label": "Database",      "type": "good",    "group": "tech"     },
+    "delivery-bold-duotone":          { "label": "Delivery",      "type": "good",    "group": "economy"  },
+    "display-line-duotone":           { "label": "Display",       "type": "neutral", "group": "tech"     }
+  },
+
+  "types": {
+    "good":    { "label": "Beneficial", "color": "#a8ffb8" },
+    "bad":     { "label": "Harmful",    "color": "#ffb0a8" },
+    "neutral": { "label": "Neutral",    "color": "#c4d8ff" }
+  },
+
+  "spawn": {
+    "initial": "dna-bold-duotone"
+  }
+}
