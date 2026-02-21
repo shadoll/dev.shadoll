@@ -152,6 +152,11 @@ export class SettingsController {
   #bindEvents() {
     const colorPicker     = /** @type {HTMLInputElement}  */ (document.getElementById('colorPicker'));
     const colorValue      = /** @type {HTMLElement}       */ (document.getElementById('colorValue'));
+    // helper for mobile theme-color
+    const setThemeColor = (c) => {
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', c);
+    };
     const speedSlider     = /** @type {HTMLInputElement}  */ (document.getElementById('speedSlider'));
     const rotToggle       = /** @type {HTMLInputElement}  */ (document.getElementById('rotationToggle'));
     const moveSpeedSlider = /** @type {HTMLInputElement}  */ (document.getElementById('moveSpeedSlider'));
@@ -176,6 +181,15 @@ export class SettingsController {
       const val = Number(/** @type {HTMLInputElement} */ (e.target).value);
       this.#gradient.setSpeed(val);
       document.getElementById('speedValue').textContent = String(val);
+      this.#saveState();
+    });
+
+    // ── Background colour picker ─────────────────────────────
+    colorPicker.addEventListener('input', (e) => {
+      const col = (/** @type {HTMLInputElement} */ (e.target)).value;
+      this.#gradient.setColor(col);
+      colorValue.textContent = col;
+      setThemeColor(col);
       this.#saveState();
     });
 
@@ -334,6 +348,7 @@ export class SettingsController {
     const letterHitCountToggle = /** @type {HTMLInputElement} */ (document.getElementById('letterHitCountToggle'));
 
     colorPicker.value      = this.#gradient.color;
+    setThemeColor(this.#gradient.color);
     colorValue.textContent = this.#gradient.color;
     speedSlider.value      = String(this.#gradient.speed);
     document.getElementById('speedValue').textContent = String(this.#gradient.speed);
