@@ -29,7 +29,10 @@
 }
 
 /* ── Background application ──────────────────────────────── */
-body {
+html, body {
+  /* apply the gradient to the root element as well so the
+     translucent iOS bars always show a matching colour even
+     when the page hasn't been scrolled */
   background: linear-gradient(
     var(--gradient-angle),
     var(--color-1)  0%,
