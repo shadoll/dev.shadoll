@@ -174,7 +174,7 @@ The other 25 are present on disk but not yet wired into the evolution system.
 
 | filename                         | label       | type    | group    |
 |----------------------------------|-------------|---------|----------|
-| dna-bold-duotone.svg             | DNA         | good    | biology  |
+| cell.svg             | cell         | good    | biology  |
 | bug-bold-duotone.svg             | Bug         | bad     | tech     |
 | buildings-3-bold-duotone.svg     | Buildings   | good    | economy  |
 | chat-round-dots-bold-duotone.svg | Chat        | neutral | social   |
@@ -202,7 +202,7 @@ Create a new group in `icons.groups` if needed.
 
 ## Current spawn behaviour
 
-Only `dna-bold-duotone` spawns by default; the spawn logic is the next target for extension.
+Only `cell` spawns by default; the spawn logic is the next target for extension.
 
 ---
 

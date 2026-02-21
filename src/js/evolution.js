@@ -4,7 +4,7 @@
  *
  *  1. Spawning — after a random interval (SPAWN_DELAY_MIN … SPAWN_DELAY_MAX),
  *     an icon appears at a random viewport position.  Most spawns produce the
- *     "initial" icon (dna-bold-duotone); with rareChance probability the rare
+ *     "initial" icon (cell); with rareChance probability the rare
  *     "bug" icon spawns instead.
  *
  *  2. Physics loop — a single rAF loop drives all live entities each frame.
@@ -126,7 +126,7 @@ export class EvolutionController {
    * Manually spawn a specific icon by name at a random viewport position.
    * Used by the guide panel when the user clicks an entity row.
    *
-   * @param {string} iconName  Key from icons.json (e.g. 'dna-bold-duotone', 'bug')
+   * @param {string} iconName  Key from icons.json (e.g. 'cell', 'bug')
    */
   async spawnNamed(iconName) {
     if (!this.#container || !this.#iconsData) return;
@@ -384,22 +384,22 @@ export class EvolutionController {
           : '#ff4d6d';
 
         // bug + normal entity → infects with virus
-        // bug + virus-filled → backwards-transforms virus back to DNA (cure)
-        const dnaMeta  = this.#iconsData.icons['dna-bold-duotone'];
-        const dnaColor = dnaMeta
-          ? (this.#iconsData.types[dnaMeta.type]?.color ?? '#a8ffb8')
+        // bug + virus-filled → backwards-transforms virus back to cell (cure)
+        const cellMeta  = this.#iconsData.icons['cell'];
+        const cellColor = cellMeta
+          ? (this.#iconsData.types[cellMeta.type]?.color ?? '#a8ffb8')
           : '#a8ffb8';
         const bugImmune = new Set(['bug', 'bacteria']);
 
         if (a.entityKey === 'bug') {
           if (b.entityKey === 'virus-filled') {
-            b.infectWith('dna-bold-duotone', dnaColor, { force: true });
+            b.infectWith('cell', cellColor, { force: true });
           } else if (!bugImmune.has(b.entityKey)) {
             b.infectWith('virus-filled', virusColor);
           }
         } else if (b.entityKey === 'bug') {
           if (a.entityKey === 'virus-filled') {
-            a.infectWith('dna-bold-duotone', dnaColor, { force: true });
+            a.infectWith('cell', cellColor, { force: true });
           } else if (!bugImmune.has(a.entityKey)) {
             a.infectWith('virus-filled', virusColor);
           }

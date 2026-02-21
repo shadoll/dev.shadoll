@@ -34,7 +34,7 @@ function normalizeSvg(raw) {
  * Load and cache an SVG icon by name.
  * Subsequent calls for the same name are synchronous (cache hit).
  *
- * @param {string} name  Filename without extension, e.g. 'dna-bold-duotone'
+ * @param {string} name  Filename without extension, e.g. 'cell'
  * @returns {Promise<string>}  Normalised SVG markup
  */
 export async function loadIcon(name) {
