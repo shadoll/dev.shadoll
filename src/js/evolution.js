@@ -30,6 +30,8 @@ const EVOLUTION_STORAGE_KEY = 'devpage:evolution';
 
 export class EvolutionController {
   /** @type {Entity[]} */          #entities        = [];
+  /** Cumulative counts of every icon ever created (since last clear or load). */
+  /** @type {Record<string,number>} */ #totalCounts    = {};
   /** @type {HTMLElement|null} */  #container       = null;
   /** @type {number} */            #moveSpeed       = DEFAULTS.MOVE_SPEED;
   /** @type {number} */            #spawnRate       = 5;
@@ -131,6 +133,8 @@ export class EvolutionController {
     const iconMeta = this.#iconsData.icons[iconName];
     if (!iconMeta) return;
     const typeMeta = this.#iconsData.types[iconMeta.type];
+    // track total count
+    this.#incrementTotal(iconName);
 
     const margin = DEFAULTS.ICON_SIZE * 2;
     const vw     = window.innerWidth;
@@ -155,6 +159,8 @@ export class EvolutionController {
     this.#entities.forEach(e => e.destroy());
     this.#entities = [];
     this.#startTime = Date.now(); // reset lifetime counter
+    // also clear total counts
+    this.#totalCounts = {};
 
     // also tell the logo word to forget its bump counts; the visual labels
     // should go back to `0` immediately
@@ -195,7 +201,20 @@ export class EvolutionController {
   /** Read-only access to current entity count (useful for debugging). */
   get entityCount() { return this.#entities.length; }
 
+  /** Cumulative totals for each icon (spawned/mutated) since last clear or load. */
+  get totalCounts() { return { ...this.#totalCounts }; }
+
   // ── Spawning ────────────────────────────────────────────────
+
+  /**
+   * Private helper: increment the all‑time count for an icon.
+   *
+   * @param {string} name
+   */
+  #incrementTotal(name) {
+    if (!name) return;
+    this.#totalCounts[name] = (this.#totalCounts[name] || 0) + 1;
+  }
 
   /**
    * Schedule the next spawn after a random delay within the configured range.
@@ -251,6 +270,8 @@ export class EvolutionController {
 
     if (entity.alive) {
       this.#entities.push(entity);
+      // record spawn for totals
+      this.#incrementTotal(name);
     }
   }
 
@@ -447,6 +468,7 @@ export class EvolutionController {
             hueShift: e.hueShift,
           })),
         logo: this.#logo?.serialise() ?? null,
+        totalCounts: this.#totalCounts,
       };
       localStorage.setItem(EVOLUTION_STORAGE_KEY, JSON.stringify(snapshot));
     } catch { /* quota exceeded — ignore */ }
@@ -471,6 +493,20 @@ export class EvolutionController {
       // Stash logo state so main.js can pass it to LogoController.init()
       if (saved.logo && typeof saved.logo === 'object') {
         this.#savedLogoState = saved.logo;
+      }
+
+      // determine whether we'll need to rebuild totals from the entity list
+      let buildTotalsFromEntities = false;
+      if (
+        saved.totalCounts &&
+        typeof saved.totalCounts === 'object' &&
+        Object.keys(saved.totalCounts).length > 0
+      ) {
+        // existing totals present
+        this.#totalCounts = { ...saved.totalCounts };
+      } else {
+        // no meaningful totals stored; rebuild from entity list below
+        buildTotalsFromEntities = true;
       }
 
       const entities = saved.entities;
@@ -504,8 +540,18 @@ export class EvolutionController {
               `hue-rotate(${s.hueShift}deg) drop-shadow(0 1px 6px rgba(0,0,0,0.35))`;
           }
           this.#entities.push(entity);
+          // if the snapshot didn't already include totals, count this entity now
+          if (buildTotalsFromEntities) {
+            this.#incrementTotal(s.name);
+          }
         }
       }));
+
+      // make sure totals are at least as large as the current restored population
+      const restored = this.getCounts();
+      for (const [key, num] of Object.entries(restored)) {
+        this.#totalCounts[key] = Math.max(this.#totalCounts[key] || 0, num);
+      }
     } catch { /* corrupt save — start fresh */ }
   }
 

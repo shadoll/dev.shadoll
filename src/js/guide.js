@@ -124,10 +124,16 @@ export class GuideController {
     const counts   = this.#evolution.getCounts();
     const lifetime = this.#evolution.lifetime;
 
-    // Update per-entity count badges
+    // Update per-entity count badges (current + all‑time total in parentheses)
+    const totals = this.#evolution.totalCounts || {};
     this.#panel.querySelectorAll('[data-count-key]').forEach(item => {
       const el = item.querySelector('.guide-entity__count');
-      if (el) el.textContent = String(counts[item.dataset.countKey] ?? 0);
+      if (el) {
+        const key = item.dataset.countKey;
+        const cur = counts[key] ?? 0;
+        const tot = totals[key] ?? 0;
+        el.textContent = tot > 0 ? `${cur} (${tot})` : String(cur);
+      }
     });
 
     // Update uptime display
