@@ -9,8 +9,14 @@
  *    ensuring the bounce always sends the icon back into the viewport.
  *  - Rotation: each entity spawns with a fixed random orientation (0–360°).
  *
+ * DNA model:
+ *  - Each cell carries a DNA instance (see dna.js) tracking its active genes.
+ *  - Genes shift the visual colour and alter physics (speed, division rate).
+ *  - Cells divide over time, copying and mutating DNA to offspring.
+ *  - Viruses may carry DNA genes that boost their lethality.
+ *
  * Collision response (handled by EvolutionController):
- *  - onHit()       — colour-shifts the icon via hue-rotate filter + flash anim.
+ *  - onHit()       — plays a brief scale-punch flash on collision (colour unchanged).
  *  - infectWith()  — async; collapses the icon, swaps SVG, re-expands as new form.
  *  - die()         — slow death: light-red flash → dark-grayscale fade → destroy.
  *
@@ -27,6 +33,13 @@
 
 import { loadIcon }  from './iconLoader.js';
 import { DEFAULTS }  from './constants.js';
+import { DNA }       from './dna.js';
+
+// Base HSL values for DNA colour derivation per entity type
+const DNA_BASE = {
+  'cell':        { h: 133, s: 100, l: 83 },
+  'virus-filled':{ h: 350, s: 100, l: 65 },
+};
 
 export class Entity {
   // ── Physics ──────────────────────────────────────────────
@@ -45,9 +58,13 @@ export class Entity {
   /** @type {string} */  color;
   /** @type {boolean} */ alive = true;
 
+  // ── DNA ───────────────────────────────────────────────────
+  /** @type {DNA} */     dna;
+  /** Frames remaining until this cell wants to divide. -1 = not a cell. */
+  /** @type {number} */  _divisionTimer = -1;
+
   // ── Visual state ──────────────────────────────────────────
-  /** Accumulated hue-rotate offset (degrees). Increases on each hit. */
-  /** @type {number} */ hueShift = 0;
+  // (hue-rotate no longer accumulated from hits; colour is set by DNA only)
 
   // ── DOM ───────────────────────────────────────────────────
   /** @type {HTMLElement|null} */ el     = null;
@@ -60,16 +77,17 @@ export class Entity {
   /**
    * @param {{ name: string, type: string, color: string,
    *           x: number, y: number, vx: number, vy: number,
-   *           rotation?: number }} config
+   *           rotation?: number, dna?: DNA }} config
    */
-  constructor({ name, type, color, x, y, vx, vy, rotation }) {
+  constructor({ name, type, color, x, y, vx, vy, rotation, dna }) {
     this.name      = name;
     this.entityKey = name;
     this.type      = type;
     this.color     = color;
     this.x  = x;   this.y  = y;
     this.vx = vx;  this.vy = vy;
-    this.rotation = rotation !== undefined ? rotation : Math.random() * 360;
+    this.rotation  = rotation !== undefined ? rotation : Math.random() * 360;
+    this.dna       = dna ?? DNA.empty();
   }
 
   // ── Public API ─────────────────────────────────────────────
@@ -102,9 +120,15 @@ export class Entity {
     this.el.appendChild(this.bodyEl);
     container.appendChild(this.el);
 
-    // Set initial colour and position
-    this.el.style.color = this.color;
+    // Set colour — DNA-derived if genes are active
+    const dnaColor = this._computeDnaColor();
+    this.el.style.color = dnaColor ?? this.color;
     this._applyTransform();
+
+    // Initialise division timer for cells
+    if (this.entityKey === 'cell') {
+      this.resetDivision();
+    }
 
     // Two rAF ticks ensure the browser has painted the spawning state
     // before adding the 'alive' class, guaranteeing the CSS transition fires.
@@ -124,9 +148,18 @@ export class Entity {
   update(speedMultiplier) {
     if (!this.el || !this.alive || this.#dying) return;
 
+    // Tick division timer for cells
+    if (this.entityKey === 'cell' && this._divisionTimer > 0) {
+      this._divisionTimer--;
+    }
+
+    // Speed gene: 'speed' for cells, 'hunt_speed' for viruses
+    const geneKey  = this.entityKey === 'virus-filled' ? 'hunt_speed' : 'speed';
+    const geneMult = this.dna.get(geneKey);
+
     // Move
-    this.x += this.vx * speedMultiplier;
-    this.y += this.vy * speedMultiplier;
+    this.x += this.vx * speedMultiplier * geneMult;
+    this.y += this.vy * speedMultiplier * geneMult;
 
     // Bounce off viewport edges
     const { ICON_HALF: h } = DEFAULTS;
@@ -156,19 +189,73 @@ export class Entity {
   }
 
   /**
+   * True when this cell has completed its division interval.
+   * EvolutionController checks this each tick.
+   */
+  get wantsToDivide() {
+    return this.entityKey === 'cell'
+      && this._divisionTimer === 0
+      && this.alive
+      && !this.#dying;
+  }
+
+  /**
+   * Reset the division countdown to a new random interval, scaled by the
+   * `division_rate` gene (higher rate → shorter wait).
+   */
+  resetDivision() {
+    const rate = this.dna.get('division_rate');  // default 1.0
+    const min  = Math.round(DEFAULTS.DIVISION_INTERVAL_MIN / rate);
+    const max  = Math.round(DEFAULTS.DIVISION_INTERVAL_MAX / rate);
+    this._divisionTimer = min + Math.floor(Math.random() * (max - min + 1));
+  }
+
+  /**
+   * Produce a config object for a child cell.
+   * The offspring is placed just outside this cell, inherits a mutated copy
+   * of its DNA, and is launched in a random direction.
+   *
+   * @returns {{ name: string, type: string, color: string, dna: DNA,
+   *             x: number, y: number, vx: number, vy: number }}
+   */
+  divide() {
+    const h      = DEFAULTS.ICON_HALF;
+    const offset = DEFAULTS.COLLISION_DIAMETER * 0.65;
+    const angle  = Math.random() * Math.PI * 2;
+    const nx     = Math.cos(angle);
+    const ny     = Math.sin(angle);
+
+    const childDna   = this.dna.reproduce(DEFAULTS.MUTATION_RATE, 'cell');
+    const childColor = childDna.size > 0
+      ? childDna.computeColor(DNA_BASE.cell.h, DNA_BASE.cell.s, DNA_BASE.cell.l)
+      : this.color;
+
+    // Clamp offspring position within viewport
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const cx = Math.max(h, Math.min(vw - h, this.x + nx * offset));
+    const cy = Math.max(h, Math.min(vh - h, this.y + ny * offset));
+
+    return {
+      name:  'cell',
+      type:  'good',
+      color: childColor,
+      dna:   childDna,
+      x:     cx,
+      y:     cy,
+      vx:    nx * DEFAULTS.BASE_SPEED,
+      vy:    ny * DEFAULTS.BASE_SPEED,
+    };
+  }
+
+  /**
    * React to a physical collision with another entity.
-   * Shifts the hue-rotate filter by a random step and plays a brief
-   * scale-punch animation to signal the impact.
+   * Plays a brief scale-punch animation. Colour is not changed — DNA controls colour.
    */
   onHit() {
     if (!this.bodyEl || !this.alive || this.#dying) return;
-    const shift = DEFAULTS.HIT_HUE_MIN + Math.floor(Math.random() * DEFAULTS.HIT_HUE_RANGE);
-    this.hueShift = (this.hueShift + shift) % 360;
-    this.bodyEl.style.filter =
-      `hue-rotate(${this.hueShift}deg) drop-shadow(0 1px 6px rgba(0,0,0,0.35))`;
-    // Flash animation — class removed after its duration
-    this.bodyEl.classList.remove('icon-entity__body--hit'); // reset if mid-anim
-    void this.bodyEl.offsetWidth;                            // force reflow
+    this.bodyEl.classList.remove('icon-entity__body--hit');
+    void this.bodyEl.offsetWidth; // force reflow so animation restarts
     this.bodyEl.classList.add('icon-entity__body--hit');
     setTimeout(() => this.bodyEl?.classList.remove('icon-entity__body--hit'), 350);
   }
@@ -191,10 +278,8 @@ export class Entity {
     this.vx = 0;
     this.vy = 0;
 
-    // Phase 1: light-red flash — clear any hit filter so CSS class takes over
+    // Phase 1: light-red flash
     this.el.style.color = DEFAULTS.KILL_FADE_COLOR;
-    this.hueShift = 0;
-    this.bodyEl.style.filter = '';
     this.bodyEl.classList.remove('icon-entity__body--hit');
 
     // Phase 2: grayscale dark fade
@@ -213,17 +298,18 @@ export class Entity {
    *
    * @param {string} iconName  Key of the SVG to transform into (e.g. 'virus-filled')
    * @param {string} color     CSS colour string for the new icon tint
+   * @param {{ force?: boolean, dna?: DNA }} [opts]
+   *   force: true bypasses the #infected guard (used for bug cure / forced transforms)
+   *   dna:   new DNA to assign to the entity after the transform
    */
-  /**
-   * @param {string} iconName
-   * @param {string} color
-   * @param {{ force?: boolean }} [opts]  force:true bypasses the #infected guard (used for bug cure)
-   */
-  async infectWith(iconName, color, { force = false } = {}) {
+  async infectWith(iconName, color, { force = false, dna = null } = {}) {
     if (this.#dying || !this.bodyEl || !this.alive) return;
     if (!force && this.#infected) return;
     this.#infected = true;
     this.entityKey = iconName;
+
+    // Update DNA before anything visual so _computeDnaColor() is correct
+    if (dna) this.dna = dna;
 
     try {
       // Pre-fetch the new SVG (likely cached) before touching the DOM
@@ -240,9 +326,17 @@ export class Entity {
 
       this.bodyEl.innerHTML = svg;
       this.color = color;
-      this.el.style.color = color;
-      this.hueShift = 0;
-      this.bodyEl.style.filter = '';  // clear any hit hue-rotate
+
+      // Apply DNA-derived colour; fall back to the base type colour
+      const dnaColor = this._computeDnaColor();
+      this.el.style.color = dnaColor ?? color;
+
+      // (Re-)initialise division timer when becoming a cell
+      if (iconName === 'cell') {
+        this.resetDivision();
+      } else {
+        this._divisionTimer = -1;
+      }
 
       // Two rAF ticks guarantee the 'spawning' state was painted
       // before switching to 'alive', so the expand transition fires.
@@ -268,6 +362,19 @@ export class Entity {
   }
 
   // ── Private ────────────────────────────────────────────────
+
+  /**
+   * Compute a DNA-derived CSS colour for this entity, or null if this entity
+   * type doesn't participate in DNA colouring or has no active genes.
+   *
+   * @returns {string|null}
+   */
+  _computeDnaColor() {
+    if (!this.dna || this.dna.size === 0) return null;
+    const base = DNA_BASE[this.entityKey];
+    if (!base) return null;
+    return this.dna.computeColor(base.h, base.s, base.l);
+  }
 
   /**
    * Write the current (x, y) position and fixed rotation to the DOM.

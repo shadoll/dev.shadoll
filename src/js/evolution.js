@@ -3,25 +3,33 @@
  * Orchestrates the icon evolution system:
  *
  *  1. Spawning — after a random interval (SPAWN_DELAY_MIN … SPAWN_DELAY_MAX),
- *     an icon appears at a random viewport position.  Most spawns produce the
- *     "initial" icon (cell); with rareChance probability the rare
- *     "bug" icon spawns instead.
+ *     an icon appears at a random viewport position.  Cells only appear
+ *     spontaneously when fewer than MIN_CELL_COUNT exist; otherwise new cells
+ *     come from division.  Bugs still spawn on the timer when the rarity roll
+ *     passes and the live bug cap isn't reached.
  *
  *  2. Physics loop — a single rAF loop drives all live entities each frame.
  *     After every position update, entity pairs are checked for collisions.
  *
- *  3. Collision response — overlapping entities receive an elastic velocity
+ *  3. Cell division — each cell carries a countdown timer.  When it reaches
+ *     zero the cell divides: an offspring entity is spawned nearby with a
+ *     mutated copy of the parent's DNA.
+ *
+ *  4. Collision response — overlapping entities receive an elastic velocity
  *     impulse (equal-mass reflection), are pushed apart, and both call onHit()
  *     to shift their hue colour.  If a "bug" entity collides with a non-immune
- *     entity, the target is infected and transforms into "virus-filled".
+ *     entity, the target is infected and transforms into "virus-filled" with
+ *     DNA potentially derived from the host cell.  Viruses may be blocked by
+ *     a cell's shield gene or have their kill chance reduced by resistance.
  *
- *  4. Speed control — setMoveSpeed(1–10) scales entity velocity in real time.
+ *  5. Speed control — setMoveSpeed(1–10) scales entity velocity in real time.
  *
  * The icon to spawn first is declared in icons.json under spawn.initial.
  * All icon metadata (type, colour) is also read from icons.json.
  */
 
 import { Entity }        from './entity.js';
+import { DNA }           from './dna.js';
 import { preloadIcons }  from './iconLoader.js';
 import { DEFAULTS }      from './constants.js';
 
@@ -204,6 +212,79 @@ export class EvolutionController {
   /** Cumulative totals for each icon (spawned/mutated) since last clear or load. */
   get totalCounts() { return { ...this.#totalCounts }; }
 
+  /**
+   * Lightweight snapshot of every live (non-dying) entity's identity and DNA.
+   * Used by PopulationPanelController to compute species + mutation stats.
+   *
+   * @returns {Array<{ key: string, dna: import('./dna.js').DNA }>}
+   */
+  getEntityDetails() {
+    return this.#entities
+      .filter(e => e.alive && !e.dying)
+      .map(e => ({ key: e.entityKey, dna: e.dna }));
+  }
+
+  /**
+   * Return a summary of every registered entity type (from icons.json).
+   * Available after init() resolves.
+   *
+   * @returns {Array<{ key: string, label: string, type: string, color: string }>}
+   */
+  getSpawnableEntities() {
+    if (!this.#iconsData) return [];
+    return Object.entries(this.#iconsData.icons).map(([key, meta]) => ({
+      key,
+      label: meta.label ?? key,
+      type:  meta.type,
+      color: this.#iconsData.types[meta.type]?.color ?? '#ffffff',
+    }));
+  }
+
+  /**
+   * Spawn an entity by name, pre-seeding its DNA with the named genes.
+   * For entity types that don't support DNA (bugs, bacteria) the genes
+   * parameter is ignored and the entity spawns with empty DNA.
+   *
+   * @param {string}   iconName   key in icons.json
+   * @param {string[]} geneNames  gene names to pre-activate (from GENE_DEFS)
+   */
+  async spawnNamedWithDna(iconName, geneNames = []) {
+    if (!this.#container || !this.#iconsData) return;
+    const iconMeta = this.#iconsData.icons[iconName];
+    if (!iconMeta) return;
+    const typeMeta = this.#iconsData.types[iconMeta.type];
+    if (!typeMeta) return;
+
+    const dna   = DNA.withGenes(geneNames);
+    let   color = typeMeta.color;
+
+    // Apply DNA-derived colour for entity types that support it
+    if (dna.size > 0) {
+      const base = { cell: { h: 133, s: 100, l: 83 }, 'virus-filled': { h: 350, s: 100, l: 65 } }[iconName];
+      if (base) color = dna.computeColor(base.h, base.s, base.l);
+    }
+
+    const margin = DEFAULTS.ICON_SIZE * 2;
+    const vw     = window.innerWidth;
+    const vh     = window.innerHeight;
+    const angle  = Math.random() * Math.PI * 2;
+
+    const entity = new Entity({
+      name:  iconName,
+      type:  iconMeta.type,
+      color,
+      dna,
+      x:  margin + Math.random() * (vw - margin * 2),
+      y:  margin + Math.random() * (vh - margin * 2),
+      vx: Math.cos(angle) * DEFAULTS.BASE_SPEED,
+      vy: Math.sin(angle) * DEFAULTS.BASE_SPEED,
+    });
+
+    this.#incrementTotal(iconName);
+    await entity.mount(this.#container);
+    if (entity.alive) this.#entities.push(entity);
+  }
+
   // ── Spawning ────────────────────────────────────────────────
 
   /**
@@ -233,18 +314,33 @@ export class EvolutionController {
     }, delay);
   }
 
-  /** Create and mount one icon entity at a random viewport position. */
+  /**
+   * Create and mount one icon entity at a random viewport position.
+   *
+   * Bugs: spawn when the rarity roll passes and the live bug count is below max.
+   * Cells: only spawn spontaneously when fewer than MIN_CELL_COUNT exist;
+   *        above that threshold, new cells come exclusively from division.
+   */
   async #spawnEntity() {
     if (!this.#container || !this.#iconsData) return;
 
-    // Decide whether this spawn is a bug or the normal icon.
-    // A bug only spawns if the rarity roll passes AND the live bug cap isn't reached.
     const { initial, rare } = this.#iconsData.spawn;
-    let name = initial;
+    let name = null;
+
+    // Roll for bug spawn first
     if (rare && Math.random() < this.#bugSpawnChance) {
       const liveBugs = this.#entities.filter(e => e.entityKey === 'bug').length;
       if (liveBugs < this.#bugMaxCount) name = rare;
     }
+
+    // Spontaneous cell spawn only when population is critically low
+    if (!name) {
+      const liveCells = this.#entities.filter(e => e.entityKey === 'cell').length;
+      if (liveCells < DEFAULTS.MIN_CELL_COUNT) name = initial;
+    }
+
+    // Nothing to spawn this cycle
+    if (!name) return;
 
     const iconMeta = this.#iconsData.icons[name];
     const typeMeta = this.#iconsData.types[iconMeta.type];
@@ -270,8 +366,24 @@ export class EvolutionController {
 
     if (entity.alive) {
       this.#entities.push(entity);
-      // record spawn for totals
       this.#incrementTotal(name);
+    }
+  }
+
+  /**
+   * Mount and register a child entity produced by cell division.
+   * Fire-and-forget async — called from the synchronous tick loop.
+   *
+   * @param {{ name: string, type: string, color: string, dna: DNA,
+   *            x: number, y: number, vx: number, vy: number }} config
+   */
+  async #spawnOffspring(config) {
+    if (!this.#container) return;
+    const entity = new Entity(config);
+    await entity.mount(this.#container);
+    if (entity.alive) {
+      this.#entities.push(entity);
+      this.#incrementTotal(config.name);
     }
   }
 
@@ -288,6 +400,19 @@ export class EvolutionController {
 
       for (const entity of this.#entities) {
         entity.update(multiplier);
+      }
+
+      // ── Cell division ──────────────────────────────────────
+      // Collect cells that have completed their division timer this frame.
+      // Reset the timer immediately (before async spawn) so the cell doesn't
+      // trigger again before its offspring finishes mounting.
+      if (this.#entities.length < DEFAULTS.MAX_POPULATION) {
+        for (const entity of this.#entities) {
+          if (entity.wantsToDivide) {
+            entity.resetDivision();
+            this.#spawnOffspring(entity.divide());
+          }
+        }
       }
 
       // Advance logo word + ejected letter physics
@@ -320,7 +445,9 @@ export class EvolutionController {
    *  2. Positional correction — push both entities apart so they no longer overlap.
    *  3. Both entities call onHit() to shift their hue colour.
    *  4. If one entity is the rare "bug", the other is infected and transforms
-   *     into "virus-filled" (unless it's already a bug or virus).
+   *     into "virus-filled" with DNA derived from the host cell.
+   *  5. If one entity is "virus-filled", it may kill or mutate the target,
+   *     subject to the target's shield and resistance genes.
    */
   #checkCollisions() {
     const entities = this.#entities;
@@ -377,14 +504,15 @@ export class EvolutionController {
 
         // ── Bug infection ──────────────────────────────────────
         // The rare "bug" transforms any non-immune entity into "virus-filled".
+        // When infecting a cell, the resulting virus receives DNA derived from
+        // the host (see DNA.forVirus) implementing the arms-race mechanic.
+        // Touching a virus cures it back to a cell.
         if (!this.#iconsData) continue;
         const virusMeta  = this.#iconsData.icons['virus-filled'];
         const virusColor = virusMeta
           ? (this.#iconsData.types[virusMeta.type]?.color ?? '#ff4d6d')
           : '#ff4d6d';
 
-        // bug + normal entity → infects with virus
-        // bug + virus-filled → backwards-transforms virus back to cell (cure)
         const cellMeta  = this.#iconsData.icons['cell'];
         const cellColor = cellMeta
           ? (this.#iconsData.types[cellMeta.type]?.color ?? '#a8ffb8')
@@ -395,29 +523,33 @@ export class EvolutionController {
           if (b.entityKey === 'virus-filled') {
             b.infectWith('cell', cellColor, { force: true });
           } else if (!bugImmune.has(b.entityKey)) {
-            b.infectWith('virus-filled', virusColor);
+            b.infectWith('virus-filled', virusColor, { dna: DNA.forVirus(b.dna) });
           }
         } else if (b.entityKey === 'bug') {
           if (a.entityKey === 'virus-filled') {
             a.infectWith('cell', cellColor, { force: true });
           } else if (!bugImmune.has(a.entityKey)) {
-            a.infectWith('virus-filled', virusColor);
+            a.infectWith('virus-filled', virusColor, { dna: DNA.forVirus(a.dna) });
           }
         }
 
         // ── Virus kill / mutation ──────────────────────────────
         // virus-filled hitting a non-immune entity: the target may die or mutate.
-        // On a failed kill roll the contact will convert the target into bacteria
-        // (10% shown in the guide) if that icon exists.  Bacteria are immune to
-        // subsequent virus or bug interactions.
+        // The collision normal (nx, ny) points from a → b; we use it to compute
+        // the approach angle so the target's shield gene can be evaluated.
         const virusImmune = new Set(['bug', 'virus-filled', 'bacteria']);
         const aIsVirus = a.entityKey === 'virus-filled';
         const bIsVirus = b.entityKey === 'virus-filled';
 
         if (aIsVirus && !virusImmune.has(b.entityKey)) {
-          this.#resolveVirusContact(a, b);
+          // Virus (a) approaches target (b): virus is on the -normal side of b.
+          // approachAngle = direction from which virus arrives, seen from b.
+          const approachAngle = Math.atan2(-ny, -nx);
+          this.#resolveVirusContact(a, b, approachAngle);
         } else if (bIsVirus && !virusImmune.has(a.entityKey)) {
-          this.#resolveVirusContact(b, a);
+          // Virus (b) approaches target (a): virus is on the +normal side of a.
+          const approachAngle = Math.atan2(ny, nx);
+          this.#resolveVirusContact(b, a, approachAngle);
         }
       }
     }
@@ -428,25 +560,57 @@ export class EvolutionController {
   /**
    * Handle a collision between a virus-filled entity and a vulnerable target.
    *
-   * 50%–100% of the time (controlled by virusKillChance) the target is killed.
-   * On the remaining rolls the virus fails to kill and the contact triggers a
-   * rare mutation: the target becomes a "bacteria" entity if that icon is
-   * defined.  Bacteria are immune to further virus attacks and bugs.
+   * The target's DNA is consulted before applying damage:
    *
-   * @param {import('./entity.js').Entity} _virus  the virus-filled entity (unused)
-   * @param {import('./entity.js').Entity} target  the entity being contacted
+   *   Shield gene — blocks the attack if the virus is approaching from within
+   *                 the cell's front arc (direction of motion ± shieldHalfWidth).
+   *                 A full-strength shield blocks a ±90° cone.
+   *
+   *   Resistance gene — reduces the effective kill chance:
+   *                 effectiveKill = max(0, baseKill − resistance)
+   *
+   * If the kill roll fails the cell survives unharmed (bacteria path disabled).
+   *
+   * @param {Entity} virus          the virus-filled entity
+   * @param {Entity} target         the entity being contacted
+   * @param {number} approachAngle  angle (radians) the virus arrives from,
+   *                                as seen from the target's frame
    */
-  #resolveVirusContact(_virus, target) {
-    if (Math.random() < this.#virusKillChance) {
-      target.die();
-    } else {
-      // mutation path – only if bacteria is registered
-      if (this.#iconsData && this.#iconsData.icons['bacteria']) {
-        const bacMeta = this.#iconsData.icons['bacteria'];
-        const bacColor = this.#iconsData.types[bacMeta.type]?.color || '#80ffee';
-        target.infectWith('bacteria', bacColor, { force: true });
+  #resolveVirusContact(virus, target, approachAngle) {
+    // ── Shield check ───────────────────────────────────────
+    const shieldStrength = target.dna.get('shield');
+    if (shieldStrength > 0) {
+      const spd = Math.hypot(target.vx, target.vy);
+      if (spd > 0.01) {
+        // Shield faces forward (direction of motion)
+        const frontAngle = Math.atan2(target.vy, target.vx);
+        const halfWidth  = shieldStrength * (Math.PI / 2);
+
+        let diff = approachAngle - frontAngle;
+        // Normalise to -π … π
+        while (diff >  Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+
+        if (Math.abs(diff) < halfWidth) {
+          // Attack blocked by shield — entity survives unaffected
+          return;
+        }
       }
     }
+
+    // ── Resistance check ───────────────────────────────────
+    const resistance  = target.dna.get('resistance');
+    const killChance  = Math.max(0, this.#virusKillChance - resistance);
+
+    // Also apply virus lethality bonus (arms-race gene)
+    const lethalBonus = virus.dna.get('lethality');
+    const effectiveKill = Math.min(1, killChance + lethalBonus);
+
+    if (Math.random() < effectiveKill) {
+      target.die();
+    }
+    // Bacteria mutation path disabled — better logic needed.
+    // When the kill roll fails the cell simply survives unharmed.
   }
 
   // ── State persistence ────────────────────────────────────────
@@ -465,7 +629,7 @@ export class EvolutionController {
             vx:       e.vx,
             vy:       e.vy,
             rotation: e.rotation,
-            hueShift: e.hueShift,
+            dna:      e.dna ? e.dna.serialise() : {},
           })),
         logo: this.#logo?.serialise() ?? null,
         totalCounts: this.#totalCounts,
@@ -519,6 +683,8 @@ export class EvolutionController {
         const typeMeta = this.#iconsData.types[iconMeta.type];
         if (!typeMeta) return;
 
+        const dna = DNA.deserialise(s.dna ?? {});
+
         const entity = new Entity({
           name:     s.name,
           type:     iconMeta.type,
@@ -528,17 +694,12 @@ export class EvolutionController {
           vx:       s.vx,
           vy:       s.vy,
           rotation: s.rotation,
+          dna,
         });
 
         await entity.mount(this.#container);
 
         if (entity.alive) {
-          // Restore accumulated hue-rotate from collisions
-          if (s.hueShift && entity.bodyEl) {
-            entity.hueShift = s.hueShift;
-            entity.bodyEl.style.filter =
-              `hue-rotate(${s.hueShift}deg) drop-shadow(0 1px 6px rgba(0,0,0,0.35))`;
-          }
           this.#entities.push(entity);
           // if the snapshot didn't already include totals, count this entity now
           if (buildTotalsFromEntities) {

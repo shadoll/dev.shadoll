@@ -14,13 +14,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500&display=swap" rel="stylesheet" />
 
-  <!-- Styles (order matters: base → gradient → modal → icons → logo → guide) -->
+  <!-- Styles (order matters: base → gradient → modal → icons → logo → guide → population) -->
   <link rel="stylesheet" href="src/styles/main.css" />
   <link rel="stylesheet" href="src/styles/gradient.css" />
   <link rel="stylesheet" href="src/styles/modal.css" />
   <link rel="stylesheet" href="src/styles/icons.css" />
   <link rel="stylesheet" href="src/styles/logo.css" />
   <link rel="stylesheet" href="src/styles/guide.css" />
+  <link rel="stylesheet" href="src/styles/population.css" />
 </head>
 <body>
 
@@ -31,6 +32,43 @@
   <button class="settings-btn icon-btn" id="settingsBtn" aria-label="Open settings" aria-haspopup="dialog">
     #
   </button>
+
+  <!-- ── Population monitor trigger (top-right, below settings) ── -->
+  <button
+    class="population-btn icon-btn"
+    id="populationBtn"
+    aria-label="Open population monitor"
+    aria-expanded="false"
+    aria-controls="populationPanel"
+  >⊕</button>
+
+  <!-- ── Population monitor panel ─────────────────────────── -->
+  <aside
+    class="pop-panel"
+    id="populationPanel"
+    aria-hidden="true"
+    aria-label="Population monitor"
+  >
+    <div class="pop-panel__header">
+      <p class="pop-panel__title">population</p>
+      <div class="pop-panel__meta">
+        <span class="pop-panel__total">0</span>
+        <span class="pop-panel__uptime">0:00</span>
+      </div>
+    </div>
+
+    <!-- Species section (dynamically populated by JS) -->
+    <div class="pop-section">
+      <p class="pop-section__label">species</p>
+      <div id="popSpecies"></div>
+    </div>
+
+    <!-- Spawn section (dynamically populated by JS) -->
+    <div class="pop-section">
+      <p class="pop-section__label">spawn</p>
+      <div id="popSpawn"></div>
+    </div>
+  </aside>
 
   <!-- ── Main content area (grows with future features) ───── -->
   <main class="page-main" id="pageMain"></main>
@@ -44,7 +82,7 @@
     aria-controls="guidePanel"
   >ℹ</button>
 
-  <!-- ── Evolution guide panel ─────────────────────────────── -->
+  <!-- ── Evolution guide panel (interactions reference only) ── -->
   <aside
     class="guide-panel"
     id="guidePanel"
@@ -52,39 +90,8 @@
     aria-label="Evolution guide"
   >
     <div class="guide-panel__header">
-      <p class="guide-panel__title">evolution info</p>
+      <p class="guide-panel__title">evolution guide</p>
       <span class="guide-panel__uptime">0:00</span>
-    </div>
-
-    <!-- Entities -->
-    <div class="guide-section">
-      <p class="guide-section__label">entities</p>
-      <ul class="guide-entities">
-        <li class="guide-entity" style="--c:#a8ffb8" data-count-key="cell">
-          <span class="guide-entity__icon" data-guide-icon="cell"></span>
-          <span class="guide-entity__name">cell</span>
-          <span class="guide-entity__role">base lifeform</span>
-          <span class="guide-entity__count">0</span>
-        </li>
-        <li class="guide-entity" style="--c:#ffb0a8" data-count-key="bug">
-          <span class="guide-entity__icon" data-guide-icon="bug"></span>
-          <span class="guide-entity__name">bug</span>
-          <span class="guide-entity__role">rare · infector</span>
-          <span class="guide-entity__count">0</span>
-        </li>
-        <li class="guide-entity" style="--c:#ff4d6d" data-count-key="virus-filled">
-          <span class="guide-entity__icon" data-guide-icon="virus-filled"></span>
-          <span class="guide-entity__name">virus</span>
-          <span class="guide-entity__role">lethal threat</span>
-          <span class="guide-entity__count">0</span>
-        </li>
-        <li class="guide-entity" style="--c:#80ffee" data-count-key="bacteria">
-          <span class="guide-entity__icon" data-guide-icon="bacteria"></span>
-          <span class="guide-entity__name">bacteria</span>
-          <span class="guide-entity__role">mutant · immune</span>
-          <span class="guide-entity__count">0</span>
-        </li>
-      </ul>
     </div>
 
     <!-- Interactions -->
@@ -129,6 +136,43 @@
           <span class="guide-rule__op">×</span>
           <span class="guide-entity__icon" data-guide-icon="virus-filled"></span>
           <span class="guide-rule__desc">bacteria immune</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- DNA mutations reference -->
+    <div class="guide-section">
+      <p class="guide-section__label">dna mutations</p>
+      <ul class="guide-rules">
+        <li class="guide-rule">
+          <span class="guide-rule__desc" style="color:rgba(255,255,255,0.55)">cell</span>
+          <span class="guide-rule__op" style="font-size:0.7rem">·</span>
+          <span class="guide-rule__desc"><span style="color:rgba(255,255,255,0.55)">speed</span> — moves faster</span>
+        </li>
+        <li class="guide-rule">
+          <span class="guide-rule__desc" style="color:rgba(255,255,255,0.55)">cell</span>
+          <span class="guide-rule__op" style="font-size:0.7rem">·</span>
+          <span class="guide-rule__desc"><span style="color:rgba(255,255,255,0.55)">resistance</span> — lower kill chance</span>
+        </li>
+        <li class="guide-rule">
+          <span class="guide-rule__desc" style="color:rgba(255,255,255,0.55)">cell</span>
+          <span class="guide-rule__op" style="font-size:0.7rem">·</span>
+          <span class="guide-rule__desc"><span style="color:rgba(255,255,255,0.55)">shield</span> — blocks frontal attacks</span>
+        </li>
+        <li class="guide-rule">
+          <span class="guide-rule__desc" style="color:rgba(255,255,255,0.55)">cell</span>
+          <span class="guide-rule__op" style="font-size:0.7rem">·</span>
+          <span class="guide-rule__desc"><span style="color:rgba(255,255,255,0.55)">division rate</span> — divides faster</span>
+        </li>
+        <li class="guide-rule">
+          <span class="guide-rule__desc" style="color:#ff4d6d">virus</span>
+          <span class="guide-rule__op" style="font-size:0.7rem">·</span>
+          <span class="guide-rule__desc"><span style="color:rgba(255,255,255,0.55)">hunt speed</span> — moves faster</span>
+        </li>
+        <li class="guide-rule">
+          <span class="guide-rule__desc" style="color:#ff4d6d">virus</span>
+          <span class="guide-rule__op" style="font-size:0.7rem">·</span>
+          <span class="guide-rule__desc"><span style="color:rgba(255,255,255,0.55)">lethality</span> — higher kill chance</span>
         </li>
       </ul>
     </div>

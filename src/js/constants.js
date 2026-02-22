@@ -66,6 +66,18 @@ export const DEFAULTS = {
   /** Total ms from kill trigger to entity removal */
   KILL_DEATH_DURATION:     3_000,
 
+  // ── DNA / Cell division ────────────────────────────────────
+  /** Probability that a gene mutates during cell division (0–1). */
+  MUTATION_RATE:          0.10,
+  /** Min frames between cell divisions (≈ 15 s at 60 fps). */
+  DIVISION_INTERVAL_MIN:   900,
+  /** Max frames between cell divisions (≈ 60 s at 60 fps). */
+  DIVISION_INTERVAL_MAX:  3600,
+  /** Cells only spontaneously spawn when fewer than this many exist. */
+  MIN_CELL_COUNT:            2,
+  /** Total entity cap — cell divisions are skipped above this. */
+  MAX_POPULATION:           50,
+
   // ── Logo word ──────────────────────────────────────────────
   /** Rendered size of each letter icon in px */
   LOGO_LETTER_SIZE:           36,

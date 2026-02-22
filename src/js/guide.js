@@ -2,18 +2,17 @@
  * guide.js
  * GuideController — manages the evolution guide panel.
  *
- * The panel lives in the DOM (HTML), always hidden.
- * On first open, guide.js fetches and injects SVG icons into
- * [data-guide-icon] slots so the panel shows actual game icons.
+ * The guide panel is a static reference showing interaction rules and
+ * DNA mutation effects.  It also displays the system uptime and provides
+ * the "restart evolution" button.
  *
- * While the panel is open, a 200 ms interval keeps entity population
- * counts and the system uptime display live.
+ * Entity statistics and spawn controls live in the separate population panel
+ * (PopulationPanelController / populationPanel.js).
  *
  * Behaviour:
  *  - Guide button (bottom-right): click to open/close.
  *  - Click outside the panel: closes it.
  *  - Escape key: closes it.
- *  - Clicking an entity row spawns that entity at a random position.
  */
 
 import { loadIcon } from './iconLoader.js';
@@ -35,14 +34,14 @@ export class GuideController {
   /** @type {boolean} */          #open  = false;
   /** @type {boolean} */          #iconsLoaded = false;
   /** @type {import('./evolution.js').EvolutionController|null} */ #evolution = null;
-  /** @type {ReturnType<typeof setInterval>|null} */ #statsTimer = null;
+  /** @type {ReturnType<typeof setInterval>|null} */ #uptimeTimer = null;
 
   /**
    * Attach event listeners. Must be called after DOM is ready.
    *
    * @param {import('./evolution.js').EvolutionController} [evolution]
-   *   Optional — if provided, clicking an entity row will spawn that entity
-   *   and the panel will show live population counts + system uptime.
+   *   Optional — if provided, the uptime display is kept live and the
+   *   restart button clears all entities.
    */
   init(evolution = null) {
     this.#evolution = evolution;
@@ -57,7 +56,7 @@ export class GuideController {
 
     // Close on outside click
     document.addEventListener('click', (e) => {
-      if (this.#open && !this.#panel.contains(e.target)) this.close();
+      if (this.#open && !this.#panel.contains(/** @type {Node} */ (e.target))) this.close();
     });
 
     // Close on Escape
@@ -65,10 +64,7 @@ export class GuideController {
       if (e.key === 'Escape' && this.#open) this.close();
     });
 
-    // Entity row clicks → spawn that entity
-    if (this.#evolution) this.#bindEntityClicks();
-
-    // Restart button → clear all entities + saved state
+    // Restart button — clears all entities and saved state
     const resetBtn = document.getElementById('guideResetBtn');
     if (resetBtn && this.#evolution) {
       resetBtn.addEventListener('click', () => this.#evolution.clear());
@@ -81,7 +77,7 @@ export class GuideController {
     this.#panel.setAttribute('aria-hidden', 'false');
     this.#btn.setAttribute('aria-expanded', 'true');
     if (!this.#iconsLoaded) this.#populateIcons();
-    if (this.#evolution) this.#startLiveUpdate();
+    if (this.#evolution) this.#startUptime();
   }
 
   close() {
@@ -89,56 +85,27 @@ export class GuideController {
     this.#panel.classList.remove('guide-panel--visible');
     this.#panel.setAttribute('aria-hidden', 'true');
     this.#btn.setAttribute('aria-expanded', 'false');
-    this.#stopLiveUpdate();
+    this.#stopUptime();
   }
 
   // ── Private ─────────────────────────────────────────────────
 
-  /** Wire each .guide-entity row to spawn that entity on click. */
-  #bindEntityClicks() {
-    this.#panel.querySelectorAll('.guide-entity').forEach(item => {
-      const slot = item.querySelector('[data-guide-icon]');
-      if (!slot) return;
-      const iconName = slot.dataset.guideIcon;
-      item.addEventListener('click', () => this.#evolution.spawnNamed(iconName));
-    });
+  #startUptime() {
+    this.#refreshUptime();
+    this.#uptimeTimer = setInterval(() => this.#refreshUptime(), 1000);
   }
 
-  /** Start a 200 ms interval that refreshes counts + uptime while the panel is open. */
-  #startLiveUpdate() {
-    this.#refreshStats();
-    this.#statsTimer = setInterval(() => this.#refreshStats(), 200);
-  }
-
-  #stopLiveUpdate() {
-    if (this.#statsTimer !== null) {
-      clearInterval(this.#statsTimer);
-      this.#statsTimer = null;
+  #stopUptime() {
+    if (this.#uptimeTimer !== null) {
+      clearInterval(this.#uptimeTimer);
+      this.#uptimeTimer = null;
     }
   }
 
-  /** Push current entity counts and system lifetime into the panel DOM. */
-  #refreshStats() {
+  #refreshUptime() {
     if (!this.#evolution || !this.#panel) return;
-
-    const counts   = this.#evolution.getCounts();
-    const lifetime = this.#evolution.lifetime;
-
-    // Update per-entity count badges (current + all‑time total in parentheses)
-    const totals = this.#evolution.totalCounts || {};
-    this.#panel.querySelectorAll('[data-count-key]').forEach(item => {
-      const el = item.querySelector('.guide-entity__count');
-      if (el) {
-        const key = item.dataset.countKey;
-        const cur = counts[key] ?? 0;
-        const tot = totals[key] ?? 0;
-        el.textContent = tot > 0 ? `${cur} (${tot})` : String(cur);
-      }
-    });
-
-    // Update uptime display
-    const uptimeEl = this.#panel.querySelector('.guide-panel__uptime');
-    if (uptimeEl) uptimeEl.textContent = formatDuration(lifetime);
+    const el = this.#panel.querySelector('.guide-panel__uptime');
+    if (el) el.textContent = formatDuration(this.#evolution.lifetime);
   }
 
   /** Inject SVGs into every [data-guide-icon] slot in the panel. */

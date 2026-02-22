@@ -1,0 +1,325 @@
+/* ════════════════════════════════════════════════════════════
+   population.css — population monitor button and panel
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Trigger button (top-right, below settings) ─────────── */
+.population-btn {
+  position: fixed;
+  top: 70px;
+  right: 26px;
+  z-index: 100;
+  font-size: 1.15rem;
+}
+
+/* ── Panel ───────────────────────────────────────────────── */
+.pop-panel {
+  position: fixed;
+  top: 116px;
+  right: 1.5rem;
+  z-index: 200;
+
+  width: 288px;
+  max-height: calc(100dvh - 140px);
+  overflow-y: auto;
+  padding: 1.1rem 1.2rem 1.2rem;
+
+  background: var(--modal-surface);
+  border: 1px solid var(--modal-border);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.pop-panel::-webkit-scrollbar        { width: 4px; }
+.pop-panel::-webkit-scrollbar-track  { background: transparent; }
+.pop-panel::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+.pop-panel--visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.pop-panel__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 1rem;
+}
+
+.pop-panel__title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--text-lo);
+  text-transform: lowercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.pop-panel__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+}
+
+.pop-panel__total {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.28);
+  font-variant-numeric: tabular-nums;
+}
+
+.pop-panel__uptime {
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  color: rgba(255, 255, 255, 0.16);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Sections ────────────────────────────────────────────── */
+.pop-section + .pop-section {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--modal-divider);
+}
+
+.pop-section__label {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.28);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin: 0 0 0.6rem;
+}
+
+/* ── Species section ─────────────────────────────────────── */
+#popSpecies {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Species header row */
+.pop-species-header {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: 0 0.5rem;
+  padding: 0.18rem 0;
+}
+
+.pop-species-header__icon {
+  width: 16px;
+  height: 16px;
+  color: var(--c, rgba(255,255,255,0.7));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--c, white) 55%, transparent));
+  flex-shrink: 0;
+}
+.pop-species-header__icon svg { width: 100%; height: 100%; display: block; }
+
+.pop-species-header__name {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.pop-species-header__count {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.28);
+  font-variant-numeric: tabular-nums;
+  min-width: 16px;
+  text-align: right;
+}
+
+/* ── Variant rows ────────────────────────────────────────── */
+.pop-variants {
+  padding-left: 24px;   /* indent under species icon */
+  margin-bottom: 0.45rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.pop-variant-row {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+/* Coloured circle representing the variant's DNA colour */
+.pop-variant-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pop-variant-genes {
+  font-family: var(--font-mono);
+  font-size: 0.57rem;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.02em;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pop-variant-count {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  color: rgba(255, 255, 255, 0.28);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Extinct variants — dimmed */
+.pop-variant-row--extinct .pop-variant-dot {
+  opacity: 0.28;
+  box-shadow: none !important;
+}
+
+.pop-variant-row--extinct .pop-variant-genes {
+  color: rgba(255, 255, 255, 0.22);
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 255, 255, 0.12);
+}
+
+.pop-variant-row--extinct .pop-variant-count {
+  color: rgba(255, 255, 255, 0.14);
+}
+
+/* ── Spawn section ───────────────────────────────────────── */
+.pop-spawn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.pop-spawn-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pop-spawn-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--c, rgba(255,255,255,0.7));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--c, white) 50%, transparent));
+}
+.pop-spawn-icon svg { width: 100%; height: 100%; display: block; }
+
+.pop-spawn-name {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.5);
+  min-width: 48px;
+}
+
+.pop-spawn-spacer { flex: 1; }
+
+.pop-spawn-btn {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  width: 24px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.38);
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+}
+.pop-spawn-btn:hover {
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.pop-spawn-btn:active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Gene checkboxes for spawn */
+.pop-spawn-genes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding-left: 22px;
+  margin-top: -0.15rem;
+}
+
+.pop-gene-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  cursor: pointer;
+  padding: 0.08rem 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 100px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.pop-gene-check:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pop-gene-check input[type="checkbox"] {
+  appearance: none;
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s;
+}
+.pop-gene-check input[type="checkbox"]:checked {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(255, 255, 255, 0.75);
+}
+
+.pop-gene-check span {
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  color: rgba(255, 255, 255, 0.35);
+  white-space: nowrap;
+  transition: color 0.12s;
+}
+.pop-gene-check:has(input:checked) span {
+  color: rgba(255, 255, 255, 0.72);
+}
+.pop-gene-check:has(input:checked) {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.05);
+}
